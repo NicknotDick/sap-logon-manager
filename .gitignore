@@ -1,0 +1,31 @@
+# ---- 构建产物 / 发布产物（体积巨大，且含单文件 exe）----
+**/bin/
+**/obj/
+publish/
+# dist 仅保留最新发布版 exe，其余构建产物忽略
+dist/*
+!dist/SAP登录管理器.exe
+*.user
+.vs/
+*.suo
+
+# ---- 运行数据 / 日志（可能含个人信息）----
+data/
+logs/
+*.log
+*.lnk
+
+# ---- 本机工具与缓存 ----
+.workbuddy/
+*.tmp
+
+# ---- 旧 Python 原型打包残留 ----
+py/__pycache__/
+**/__pycache__/
+*.pyc
+build/py/
+SAP登录器-简易版.exe
+*.pkg
+
+# ---- 本机注册表备份（含机器信息）----
+registry-backup-*.txt

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>SapLauncher</AssemblyName>
+    <RootNamespace>SapLauncher</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <Product>SAP 登录管理器</Product>
+    <AssemblyTitle>SAP 登录管理器</AssemblyTitle>
+    <Description>SAP GUI 一键登录管理器（本地加密，免安装）</Description>
+    <Company>Gururu Nick</Company>
+    <Copyright>© 2026 Gururu Nick · 使用 WorkBuddy 完成</Copyright>
+    <NeutralLanguage>zh-Hans</NeutralLanguage>
+    <SatelliteResourceLanguages>zh-Hans;en</SatelliteResourceLanguages>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <!-- WinForms 的隐式 using 会与 WPF 类型冲突（ComboBox / Application / KeyEventArgs 等），此处移除，托盘代码显式引入 -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
+</Project>
