@@ -1,0 +1,5 @@
+本目录是 SAP登录管理器.exe 的分卷包（因网络限制无法单次上传完整 exe）。
+合并步骤：
+  1. 确保本目录存在 part_000、part_001 … 全部分卷；
+  2. 运行：python release-parts/merge.py
+  3. 生成的 exe 位于 dist/SAP登录管理器.exe

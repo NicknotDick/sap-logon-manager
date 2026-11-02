@@ -1,0 +1,154 @@
+<Window x:Class="SapLauncher.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource Settings.Title}"
+        Width="720" Height="760" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Brush.Window}"
+        FontFamily="Microsoft YaHei UI, Segoe UI"
+        ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="24,20,24,0">
+            <StackPanel>
+                <TextBlock Text="{DynamicResource Settings.Title}" Style="{StaticResource Text.Title}" Margin="0,0,0,14" />
+
+                <!-- 通用 -->
+                <TextBlock Text="{DynamicResource Settings.General}" Style="{StaticResource Text.Caption}" Margin="0,0,0,6" />
+                <Border Background="{DynamicResource Brush.Surface}" CornerRadius="9" BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1" Padding="16,12">
+                    <StackPanel>
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="200" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource Settings.Theme}" VerticalAlignment="Center" />
+                            <ComboBox x:Name="ThemeBox" Grid.Column="1" SelectionChanged="OnThemeChanged" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="200" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource Settings.Language}" VerticalAlignment="Center" />
+                            <ComboBox x:Name="LangBox" Grid.Column="1" SelectionChanged="OnLanguageChanged" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 安全 -->
+                <TextBlock Text="{DynamicResource Settings.Security}" Style="{StaticResource Text.Caption}" Margin="0,18,0,6" />
+                <Border Background="{DynamicResource Brush.Surface}" CornerRadius="9" BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1" Padding="16,12">
+                    <StackPanel>
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="110" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource Settings.IdleLock}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                            <TextBox x:Name="IdleLockBox" Grid.Column="1" />
+                        </Grid>
+                        <CheckBox x:Name="AllowCmdPwCheck" Content="{DynamicResource Settings.AllowCmdPw}" Margin="0,12,0,4" />
+                        <TextBlock Text="{DynamicResource Settings.AllowCmdPwHint}" Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap" Margin="24,0,0,4" />
+                        <CheckBox x:Name="WindowsHelloCheck" Content="{DynamicResource Settings.WindowsHello}"
+                                  Margin="0,12,0,4" Checked="OnWindowsHelloChanged" Unchecked="OnWindowsHelloChanged" />
+                        <TextBlock Text="{DynamicResource Settings.WindowsHelloHint}" Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap" Margin="24,0,0,4" LineHeight="18" />
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button Content="{DynamicResource Settings.ChangePassword}" Click="OnChangePassword" Margin="0,0,8,0" />
+                            <Button Content="{DynamicResource Settings.ClearCreds}" Click="OnClearCredentials" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 登录 -->
+                <TextBlock Text="{DynamicResource Settings.Launch}" Style="{StaticResource Text.Caption}" Margin="0,18,0,6" />
+                <Border Background="{DynamicResource Brush.Surface}" CornerRadius="9" BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1" Padding="16,12">
+                    <StackPanel>
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="110" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource Settings.DefaultClient}" VerticalAlignment="Center" />
+                            <TextBox x:Name="DefaultClientBox" Grid.Column="1" />
+                        </Grid>
+                        <TextBlock Text="{DynamicResource Settings.WorkDir}" Margin="0,12,0,5" />
+                        <TextBox x:Name="WorkDirBox" />
+                        <Grid Margin="0,10,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="110" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource Settings.BatchInterval}" VerticalAlignment="Center" />
+                            <TextBox x:Name="BatchIntervalBox" Grid.Column="1" />
+                        </Grid>
+                        <CheckBox x:Name="ReuseCheck" Content="{DynamicResource Settings.Reuse}" Margin="0,12,0,6" />
+                        <CheckBox x:Name="AutoFillCheck" Content="{DynamicResource Settings.AutoFillLogon}" Margin="0,0,0,4" />
+                        <TextBlock Text="{DynamicResource Settings.AutoFillLogonHint}" Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap" Margin="24,0,0,6" LineHeight="18" />
+                        <CheckBox x:Name="SkipCheck" Content="{DynamicResource Settings.SkipUnreachable}" Margin="0,0,0,6" />
+                        <CheckBox x:Name="ProdCheck" Content="{DynamicResource Settings.ConfirmProd}" Margin="0,0,0,4" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 集成 -->
+                <TextBlock Text="{DynamicResource Settings.Integration}" Style="{StaticResource Text.Caption}" Margin="0,18,0,6" />
+                <Border Background="{DynamicResource Brush.Surface}" CornerRadius="9" BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1" Padding="16,12">
+                    <StackPanel>
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="160" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{DynamicResource Settings.Hotkey}" VerticalAlignment="Center" />
+                            <TextBox x:Name="HotkeyBox" Grid.Column="1" />
+                        </Grid>
+                        <CheckBox x:Name="StartupCheck" Content="{DynamicResource Settings.Startup}" Margin="0,12,0,6" />
+                        <CheckBox x:Name="TrayCheck" Content="{DynamicResource Settings.Tray}" Margin="0,0,0,4" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 数据 -->
+                <TextBlock Text="{DynamicResource Settings.Data}" Style="{StaticResource Text.Caption}" Margin="0,18,0,6" />
+                <Border Background="{DynamicResource Brush.Surface}" CornerRadius="9" BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1" Padding="16,12">
+                    <StackPanel>
+                        <WrapPanel>
+                            <Button Content="{DynamicResource Btn.Export}" Click="OnExport" Margin="0,0,8,8" />
+                            <Button Content="{DynamicResource Btn.Import}" Click="OnImport" Margin="0,0,8,8" />
+                            <Button Content="{DynamicResource Settings.OpenData}" Click="OnOpenData" Margin="0,0,8,8" />
+                            <Button Content="{DynamicResource Settings.SwitchPortable}" Click="OnSwitchPortable" Margin="0,0,8,8" />
+                            <Button Content="{DynamicResource Settings.Diagnostic}" Click="OnDiagnostic" Margin="0,0,8,8" />
+                            <Button Content="{DynamicResource Settings.Rollback}" Click="OnRollback" Margin="0,0,8,8" />
+                            <Button Content="{DynamicResource Settings.DesktopShortcut}" Click="OnDesktopShortcut" Margin="0,0,8,8" />
+                        </WrapPanel>
+                        <TextBlock x:Name="DataDirText" Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap" Margin="0,4,0,0" LineHeight="18" />
+                        <TextBlock Text="{DynamicResource Settings.Notice}" Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap" Margin="0,8,0,0" LineHeight="18" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock x:Name="StatusText" Style="{StaticResource Text.Caption}" Margin="0,14,0,0"
+                           Foreground="{DynamicResource Brush.Success}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" BorderBrush="{DynamicResource Brush.Border}" BorderThickness="0,1,0,0" Padding="24,14">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{DynamicResource Btn.Close}" Click="OnCloseClick" Margin="0,0,10,0" />
+                <Button Content="{DynamicResource Btn.Save}" Style="{StaticResource Btn.Primary}" Click="OnSaveClick" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
