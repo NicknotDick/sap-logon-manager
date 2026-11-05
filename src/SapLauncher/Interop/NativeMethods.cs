@@ -360,7 +360,7 @@ internal static class NativeMethods
     /// 校验窗口所属进程确实是 SAP GUI（防钓鱼：绝不能把密码填给任意同名弹框）。
     /// 要求镜像名为 saplogon.exe / sapgui.exe，且位于 SAP GUI 安装目录下。
     /// </summary>
-    public static bool IsTrustedSapWindow(IntPtr hWnd, string? sapGuiDir, out string imagePath, out string reason)
+    public static bool IsTrustedSapWindow(IntPtr hWnd, IEnumerable<string>? trustedDirs, out string imagePath, out string reason)
     {
         imagePath = "";
         reason = "";
@@ -405,22 +405,32 @@ internal static class NativeMethods
             return false;
         }
 
-        if (!string.IsNullOrWhiteSpace(sapGuiDir))
+        if (trustedDirs is not null)
         {
-            try
-            {
-                var dir = Path.GetFullPath(sapGuiDir).TrimEnd('\\') + "\\";
-                if (!Path.GetFullPath(imagePath).StartsWith(dir, StringComparison.OrdinalIgnoreCase))
-                {
-                    reason = "进程不在 SAP 安装目录：" + imagePath;
-                    return false;
-                }
-            }
-            catch
+            string? procDir = null;
+            try { procDir = Path.GetDirectoryName(Path.GetFullPath(imagePath)); } catch { }
+            if (procDir is null)
             {
                 reason = "路径规范化失败";
                 return false;
             }
+
+            // 任一可信目录（检测到的安装目录 / 手动指定目录 / 本程序实际启动的 SAP exe 目录）
+            // 命中即放行；全部不命中才拒绝。
+            foreach (var dir in trustedDirs)
+            {
+                if (string.IsNullOrWhiteSpace(dir)) continue;
+                try
+                {
+                    var d = Path.GetFullPath(dir.Trim().Trim('"')).TrimEnd('\\');
+                    if (procDir.Equals(d, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+                catch { }
+            }
+
+            reason = "进程不在任何可信 SAP 目录：" + imagePath;
+            return false;
         }
 
         return true;

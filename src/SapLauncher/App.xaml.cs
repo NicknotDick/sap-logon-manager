@@ -23,7 +23,7 @@ public static class AppServices
 
     public static void Initialize()
     {
-        Gui = SapGuiLocator.Locate();
+        Gui = SapGuiLocator.Locate(Settings.GuiDir);
         Scripts = new ScriptService(Manifest.Data);
         Scripts.Refresh();
         Launch = new LaunchService(Gui);
@@ -31,7 +31,7 @@ public static class AppServices
 
     public static void RefreshGui()
     {
-        Gui = SapGuiLocator.Locate();
+        Gui = SapGuiLocator.Locate(Settings.GuiDir);
         Launch.Refresh();
     }
 }
@@ -98,7 +98,7 @@ public partial class App : Application
             foreach (var (dialog, title) in Interop.NativeMethods.GetVisibleDialogWindows())
             {
                 sb2.AppendLine("对话框: " + title);
-                var trusted = Interop.NativeMethods.IsTrustedSapWindow(dialog, gui.InstallDir, out var img, out var why);
+                var trusted = Interop.NativeMethods.IsTrustedSapWindow(dialog, new[] { gui.InstallDir }, out var img, out var why);
                 sb2.AppendLine($"  进程={img}");
                 sb2.AppendLine($"  可信={trusted} {why}");
                 var shaped = Interop.NativeMethods.LooksLikeLogonDialog(dialog, out var shape);

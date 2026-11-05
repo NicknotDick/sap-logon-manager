@@ -150,7 +150,7 @@
     <sys:String x:Key="Settings.ChangePassword">修改主密码</sys:String>
     <sys:String x:Key="Settings.ClearCreds">清除全部凭据</sys:String>
     <sys:String x:Key="Settings.AllowCmdPw">允许密码出现在命令行</sys:String>
-    <sys:String x:Key="Settings.AllowCmdPwHint">默认关闭。程序主路径是「.sap 定位 + 登录框自动填表」，密码不进命令行也不落盘。此项仅为极端备选：开启后密码会短暂出现在 sapshcut 的进程命令行里。</sys:String>
+    <sys:String x:Key="Settings.AllowCmdPwHint">默认开启，登录更直接、不依赖弹框自动填表。注意：开启后密码会短暂出现在 sapshcut 的进程命令行里（本机进程列表可见）。安全要求高的环境可关闭，改走「.sap 定位 + 登录框自动填表」。</sys:String>
     <sys:String x:Key="Settings.Launch">登录</sys:String>
     <sys:String x:Key="Settings.DefaultClient">默认客户端</sys:String>
     <sys:String x:Key="Settings.WorkDir">SAP 工作目录</sys:String>
@@ -241,4 +241,14 @@
     <sys:String x:Key="Unlock.RecoverNoKey">未启用「记住主密码」，无法用 Windows 密码恢复，请手动输入主密码。</sys:String>
     <sys:String x:Key="Unlock.WindowsPwdWrong">Windows 密码不正确。</sys:String>
     <sys:String x:Key="Editor.DisplayName">姓名（可选）</sys:String>
+    <sys:String x:Key="Settings.GuiSection">SAP GUI</sys:String>
+    <sys:String x:Key="Settings.GuiPath">SAP GUI 安装目录</sys:String>
+    <sys:String x:Key="Settings.GuiPathHint">留空则自动探测（注册表、卸载项、PATH、各盘符常见路径）。自动探测失败时，请在此指定含 saplogon.exe 的目录。</sys:String>
+    <sys:String x:Key="Settings.GuiDetect">重新检测</sys:String>
+    <sys:String x:Key="Settings.GuiFound">已检测到 SAP GUI</sys:String>
+    <sys:String x:Key="Settings.GuiVersion">版本</sys:String>
+    <sys:String x:Key="Settings.GuiDirLabel">安装目录</sys:String>
+    <sys:String x:Key="Settings.GuiMissing">未检测到 SAP GUI：请先安装 SAP GUI for Windows，或在下方指定安装目录。</sys:String>
+    <sys:String x:Key="Settings.GuiTried">已尝试路径</sys:String>
+    <sys:String x:Key="Btn.AllFiles">所有文件</sys:String>
 </ResourceDictionary>

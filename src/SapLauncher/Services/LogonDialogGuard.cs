@@ -27,18 +27,22 @@ public sealed class LogonDialogGuard
     private readonly string _displayName;
     private readonly string? _user;
     private readonly string? _password;
-    private readonly string? _sapGuiDir;
+    private readonly List<string> _trustedDirs;
     private readonly HashSet<long> _handled = new();
 
-    public LogonDialogGuard(string? sid, string? client, string? user, string? password, string? sapGuiDir,
-        string? displayName = null)
+    public LogonDialogGuard(string? sid, string? client, string? user, string? password,
+        IEnumerable<string?>? trustedDirs, string? displayName = null)
     {
         _sid = (sid ?? "").Trim();
         _client = (client ?? "").Trim();
         _displayName = (displayName ?? "").Trim();
         _user = user;
         _password = password;
-        _sapGuiDir = sapGuiDir;
+        _trustedDirs = (trustedDirs ?? Enumerable.Empty<string?>())
+            .Where(d => !string.IsNullOrWhiteSpace(d))
+            .Select(d => d!.Trim().Trim('"'))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     /// <summary>已回填次数（0 表示从未接管过弹框）。</summary>
@@ -73,7 +77,7 @@ public sealed class LogonDialogGuard
                 continue;
             }
 
-            if (!NativeMethods.IsTrustedSapWindow(handle, _sapGuiDir, out var image, out var reason))
+            if (!NativeMethods.IsTrustedSapWindow(handle, _trustedDirs, out var image, out var reason))
             {
                 Log.Warn($"登录弹框来自不可信进程，拒绝填充：{title}（{reason}）");
                 _handled.Add(handle.ToInt64());

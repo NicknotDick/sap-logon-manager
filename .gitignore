@@ -37,3 +37,9 @@ docs/screenshots/
 
 # 含本机路径的临时脚本
 build/read_lnk.py
+
+# ---- 分发产物（exe 超 50MB，走 GitHub Release 附件分发）----
+release/
+build/out-*/
+docs/
+release-parts/

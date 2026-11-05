@@ -35,6 +35,8 @@ public partial class SettingsWindow : Window
         AllowCmdPwCheck.IsChecked = s.AllowPasswordOnCommandLine;
         WindowsHelloCheck.IsChecked = s.UseWindowsHello;
         DefaultClientBox.Text = s.DefaultClient;
+        GuiDirBox.Text = s.GuiDir;
+        UpdateGuiStatus(s.GuiDir);
         WorkDirBox.Text = s.WorkDir;
         BatchIntervalBox.Text = s.BatchIntervalSeconds.ToString();
         ReuseCheck.IsChecked = s.ReuseSession;
@@ -49,6 +51,45 @@ public partial class SettingsWindow : Window
         DataDirText.Text = Localizer.Get("Settings.DataDir") + ": " + AppPaths.Root + "\n" + mode;
 
         _loading = false;
+    }
+
+    /// <summary>刷新 GUI 检测状态文本：显示版本/目录，失败时列出尝试过的路径。</summary>
+    private void UpdateGuiStatus(string? overrideDir)
+    {
+        var gui = SapGuiLocator.Locate(overrideDir);
+        if (gui.IsInstalled)
+        {
+            GuiStatusText.Text = Localizer.Get("Settings.GuiFound") + "\n" +
+                                 Localizer.Get("Settings.GuiVersion") + "：" + gui.Version + "\n" +
+                                 Localizer.Get("Settings.GuiDirLabel") + "：" + gui.InstallDir;
+            return;
+        }
+
+        var tried = SapGuiLocator.LastProbed.Take(6).ToList();
+        GuiStatusText.Text = Localizer.Get("Settings.GuiMissing") +
+                             (tried.Count > 0
+                                 ? "\n" + Localizer.Get("Settings.GuiTried") + "：" + string.Join("；", tried)
+                                 : "");
+    }
+
+    private void OnBrowseGui(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = Localizer.Get("Settings.GuiPath"),
+            Filter = "SAP GUI (saplogon.exe;sapshcut.exe)|saplogon.exe;sapshcut.exe|" + Localizer.Get("Btn.AllFiles") + "|*.*",
+            CheckFileExists = true
+        };
+        if (dlg.ShowDialog(this) != true) return;
+
+        var dir = System.IO.Path.GetDirectoryName(dlg.FileName) ?? "";
+        GuiDirBox.Text = dir;
+        UpdateGuiStatus(dir);
+    }
+
+    private void OnDetectGui(object sender, RoutedEventArgs e)
+    {
+        UpdateGuiStatus(GuiDirBox.Text.Trim());
     }
 
     private static void Select(ComboBox box, string tag)
@@ -113,10 +154,13 @@ public partial class SettingsWindow : Window
         s.ConfirmProduction = ProdCheck.IsChecked == true;
         s.Hotkey = string.IsNullOrWhiteSpace(HotkeyBox.Text) ? "Ctrl+Alt+S" : HotkeyBox.Text.Trim();
         s.MinimizeToTray = TrayCheck.IsChecked == true;
+        s.GuiDir = GuiDirBox.Text.Trim();
 
         StartupManager.Set(StartupCheck.IsChecked == true);
 
         AppServices.Manifest.Save();
+        // 路径可能变化：立即重新定位，主窗口状态栏随之更新
+        AppServices.RefreshGui();
         ThemeManager.Apply(s.Theme);
         Localizer.Apply(s.Language);
         WindowTheme.Refresh(this);

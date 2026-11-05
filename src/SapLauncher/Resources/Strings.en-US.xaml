@@ -150,7 +150,7 @@
     <sys:String x:Key="Settings.ChangePassword">Change master password</sys:String>
     <sys:String x:Key="Settings.ClearCreds">Clear all credentials</sys:String>
     <sys:String x:Key="Settings.AllowCmdPw">Allow password on the command line</sys:String>
-    <sys:String x:Key="Settings.AllowCmdPwHint">Off by default. The main path is "locate via .sap + auto-fill the logon box", so the password never reaches the command line or the disk. This is an extreme fallback only: when on, the password briefly appears in the sapshcut process command line.</sys:String>
+    <sys:String x:Key="Settings.AllowCmdPwHint">On by default for a more direct logon without relying on dialog auto-fill. Note: when on, the password briefly appears in the sapshcut process command line (visible to local process listing). Turn off in high-security environments to use "locate via .sap + auto-fill the logon box" instead.</sys:String>
     <sys:String x:Key="Settings.Launch">Logon</sys:String>
     <sys:String x:Key="Settings.DefaultClient">Default client</sys:String>
     <sys:String x:Key="Settings.WorkDir">SAP working directory</sys:String>
@@ -242,4 +242,14 @@
     <sys:String x:Key="Unlock.RecoverNoKey">Recovery unavailable: "Remember master password" is off. Please type the master password.</sys:String>
     <sys:String x:Key="Unlock.WindowsPwdWrong">Incorrect Windows password.</sys:String>
     <sys:String x:Key="Editor.DisplayName">Name (optional)</sys:String>
+    <sys:String x:Key="Settings.GuiSection">SAP GUI</sys:String>
+    <sys:String x:Key="Settings.GuiPath">SAP GUI installation folder</sys:String>
+    <sys:String x:Key="Settings.GuiPathHint">Leave empty to auto-detect (registry, uninstall entries, PATH, common paths on each drive). If auto-detection fails, point to the folder containing saplogon.exe.</sys:String>
+    <sys:String x:Key="Settings.GuiDetect">Detect again</sys:String>
+    <sys:String x:Key="Settings.GuiFound">SAP GUI detected</sys:String>
+    <sys:String x:Key="Settings.GuiVersion">Version</sys:String>
+    <sys:String x:Key="Settings.GuiDirLabel">Install folder</sys:String>
+    <sys:String x:Key="Settings.GuiMissing">SAP GUI not detected: install SAP GUI for Windows, or specify the installation folder below.</sys:String>
+    <sys:String x:Key="Settings.GuiTried">Paths tried</sys:String>
+    <sys:String x:Key="Btn.AllFiles">All files</sys:String>
 </ResourceDictionary>

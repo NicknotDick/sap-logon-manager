@@ -49,6 +49,30 @@ public static class SelfTest
             if (!gui.IsInstalled) throw new InvalidOperationException("未检测到 SAP GUI");
         });
 
+        // 1b. SAP GUI 定位：手动指定优先、无效目录回退、探测记录
+        Check("SAP GUI 定位：手动目录优先 / 无效目录回退", () =>
+        {
+            var auto = SapGuiLocator.Locate();
+            if (!auto.IsInstalled) throw new InvalidOperationException("自动探测失败，无法继续验证");
+
+            // a) 指向真实目录：应原样返回该目录
+            var byOverride = SapGuiLocator.Locate(auto.InstallDir);
+            sb.AppendLine($"      手动指定 {auto.InstallDir} → {byOverride.InstallDir}");
+            if (!byOverride.IsInstalled) throw new InvalidOperationException("手动指定真实目录却判定为未安装");
+            if (!string.Equals(byOverride.InstallDir.TrimEnd('\\'), auto.InstallDir.TrimEnd('\\'),
+                    StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("手动指定目录未被优先采用");
+
+            // b) 指向不存在的目录：应回退到自动探测，而不是直接判定未安装
+            var fallback = SapGuiLocator.Locate(@"Z:\definitely-not-exist\SAPgui");
+            sb.AppendLine($"      无效覆盖 → 回退结果 {fallback.InstallDir}");
+            if (!fallback.IsInstalled) throw new InvalidOperationException("无效目录未回退到自动探测");
+
+            // c) 探测记录不为空（诊断页依赖它列出尝试过的路径）
+            if (SapGuiLocator.LastProbed.Count == 0) throw new InvalidOperationException("未记录探测路径");
+            sb.AppendLine($"      探测路径 {SapGuiLocator.LastProbed.Count} 条");
+        });
+
         // 2. 配置解析
         LandscapeScanResult? scan = null;
         Check("SAP Logon 配置解析", () =>
@@ -637,7 +661,7 @@ public static class SelfTest
                 throw new InvalidOperationException("无括号标题不应被接受");
 
             // 格式②：.sap 启动，标题即显示名（实测 "DeRUCCI PRD"）
-            var guard = new LogonDialogGuard("PRD", "800", "200002", "secret", "C:////SAP", "DeRUCCI PRD");
+            var guard = new LogonDialogGuard("PRD", "800", "200002", "secret", new[] { "C:////SAP" }, "DeRUCCI PRD");
             var info = guard.MatchTitle("DeRUCCI PRD");
             if (info is null) throw new InvalidOperationException("格式②（显示名）未被识别");
             if (info.Value.Sid != "PRD" || info.Value.Client != "800")
@@ -648,13 +672,13 @@ public static class SelfTest
                 throw new InvalidOperationException("显示名匹配应忽略大小写与首尾空格");
 
             // 别的系统的显示名不应命中
-            var other = new LogonDialogGuard("QAS", "300", "u", "p", "C:////SAP", "DEMO_QAS");
+            var other = new LogonDialogGuard("QAS", "300", "u", "p", new[] { "C:////SAP" }, "DEMO_QAS");
             if (other.MatchTitle("DeRUCCI PRD") is not null)
                 throw new InvalidOperationException("不同系统的显示名被误匹配");
 
             // 回归：未传入 displayName 时，纯显示名标题（.sap 路径）必须匹配失败。
             // 这正是 v9 发布后「仍弹密码框」的根因——LaunchAsync 构造 guard 漏传了 displayName。
-            var noName = new LogonDialogGuard("PRD", "800", "200002", "secret", "C:////SAP");
+            var noName = new LogonDialogGuard("PRD", "800", "200002", "secret", new[] { "C:////SAP" });
             if (noName.MatchTitle("DeRUCCI PRD") is not null)
                 throw new InvalidOperationException("未传 displayName 时不应匹配显示名标题（会导致 .sap 路径无法自动填密码）");
 

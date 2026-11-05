@@ -29,7 +29,7 @@ public sealed class LaunchService
 
     public SapGuiInfo Gui => _gui;
 
-    public void Refresh() => _gui = SapGuiLocator.Locate();
+    public void Refresh() => _gui = SapGuiLocator.Locate(AppServices.Settings.GuiDir);
 
     /// <summary>会话窗口标题是否对应指定 SID（实测标题形如 "SAP PRD (1)"、"General Table Display DQ1 (1)"）。</summary>
     public static bool TitleMatchesSid(string? title, string? sid)
@@ -66,7 +66,7 @@ public sealed class LaunchService
                 client: clientText,
                 user: credential!.User,
                 password: credential.Password,
-                sapGuiDir: _gui.InstallDir,
+                trustedDirs: TrustedSapDirs(),
                 displayName: system.Name)
             : null;
 
@@ -465,6 +465,20 @@ public sealed class LaunchService
     private static bool TryStart(string exe, IEnumerable<string> args, out string error)
         => TryStart(exe, args, out error, out _);
 
+    /// <summary>本程序实际启动过的 SAP exe 所在目录。这些目录下的登录弹框天然可信——
+    /// 即使 GUI 安装目录检测失败或手动指定不准，弹框接管仍能工作。</summary>
+    private static readonly HashSet<string> KnownSapDirs = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object KnownSapDirsLock = new();
+
+    /// <summary>可信目录合集：检测到的安装目录 + 手动指定目录 + 本程序启动过的 SAP exe 目录。</summary>
+    internal List<string?> TrustedSapDirs()
+    {
+        var list = new List<string?> { _gui.InstallDir, AppServices.Settings.GuiDir };
+        lock (KnownSapDirsLock)
+            list.AddRange(KnownSapDirs);
+        return list;
+    }
+
     private static bool TryStart(string exe, IEnumerable<string> args, out string error, out Process? process)
     {
         error = "";
@@ -485,6 +499,10 @@ public sealed class LaunchService
             };
             foreach (var a in args) psi.ArgumentList.Add(a);
             process = Process.Start(psi);
+            // 记录启动的 SAP exe 目录：弹框接管时视为可信（同事机器 GUI 装在非标准路径也能自动填充）
+            var exeDir = Path.GetDirectoryName(exe);
+            if (!string.IsNullOrWhiteSpace(exeDir))
+                lock (KnownSapDirsLock) KnownSapDirs.Add(exeDir);
             return true;
         }
         catch (Exception ex)
@@ -499,6 +517,24 @@ public sealed class LaunchService
         error = "";
         try
         {
+            // .sap 由注册表关联程序（通常是 saplogon.exe）打开；解析关联路径记入可信目录，
+            // 使弹框接管在 GUI 目录检测失败/指定不准时仍然有效。
+            try
+            {
+                using var key = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(@"\.sap\shell\open\command")
+                                ?? Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.sap\UserChoice");
+                var cmd = key?.GetValue(null) as string;
+                if (!string.IsNullOrWhiteSpace(cmd))
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(cmd, '"'.ToString() + "([^\"]+" + '"'.ToString() + ")");
+                    var exe = m.Success ? m.Groups[1].Value : cmd.Split(' ')[0];
+                    var dir = Path.GetDirectoryName(Environment.ExpandEnvironmentVariables(exe));
+                    if (!string.IsNullOrWhiteSpace(dir) && dir.Contains("SAP", StringComparison.OrdinalIgnoreCase))
+                        lock (KnownSapDirsLock) KnownSapDirs.Add(dir);
+                }
+            }
+            catch { }
+
             Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
             return true;
         }

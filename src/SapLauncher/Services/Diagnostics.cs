@@ -25,6 +25,13 @@ public static class Diagnostics
         sb.AppendLine("安装目录：" + (string.IsNullOrEmpty(AppServices.Gui.InstallDir) ? "未检测到" : AppServices.Gui.InstallDir));
         sb.AppendLine("saplogon：" + (File.Exists(AppServices.Gui.SapLogonPath) ? "存在" : "缺失"));
         sb.AppendLine("sapshcut：" + (File.Exists(AppServices.Gui.SapShcutPath) ? "存在" : "缺失"));
+        if (!string.IsNullOrWhiteSpace(AppServices.Settings.GuiDir))
+            sb.AppendLine("手动指定目录：" + AppServices.Settings.GuiDir);
+        if (!AppServices.Gui.IsInstalled && SapGuiLocator.LastProbed.Count > 0)
+        {
+            sb.AppendLine("已尝试路径：");
+            foreach (var p in SapGuiLocator.LastProbed.Take(12)) sb.AppendLine("  " + p);
+        }
         sb.AppendLine();
 
         sb.AppendLine("--- 配置文件 ---");

@@ -226,17 +226,18 @@ public class AppSettings
     public bool RememberMasterKey { get; set; }
     /// <summary>启用后用 Windows Hello（PIN/指纹/面容）验证代替手输主密码解锁。</summary>
     public bool UseWindowsHello { get; set; }
-    public int IdleLockMinutes { get; set; } = 10;
+    /// <summary>闲置自动锁定（分钟），0 表示不锁定。默认 0：登录器常驻可用，无需反复解锁。</summary>
+    public int IdleLockMinutes { get; set; } = 0;
     public bool StartWithWindows { get; set; }
     public bool MinimizeToTray { get; set; } = true;
     public bool ConfirmProduction { get; set; } = true;
     public bool SkipUnreachableInBatch { get; set; } = true;
     /// <summary>
-    /// <summary>
-    /// 是否允许密码出现在 sapshcut 命令行（极端备选，默认关闭）。
-    /// 主路径是「.sap 定位 + 登录框自动填表」，密码不进命令行也不落盘。
+    /// 是否允许密码出现在 sapshcut 命令行。默认开启：登录更直接、不依赖弹框自动填表。
+    /// 密码会短暂出现在 sapshcut 进程命令行里（进程列表可见），安全性弱于「.sap 定位 +
+    /// 登录框自动填表」主路径；对安全性要求高的环境可关闭，改走弹框自动填表。
     /// </summary>
-    public bool AllowPasswordOnCommandLine { get; set; }
+    public bool AllowPasswordOnCommandLine { get; set; } = true;
 
     /// <summary>
     /// SAP 弹出「快捷方式 - 登录」对话框时，是否用凭据库里的密码自动填充并点击登录。
@@ -249,6 +250,12 @@ public class AppSettings
     public string Hotkey { get; set; } = "Ctrl+Alt+S";
     public string SortMode { get; set; } = "Favorite";
     public string DefaultClient { get; set; } = "100";
+
+    /// <summary>
+    /// 手动指定的 SAP GUI 安装目录（含 saplogon.exe / sapshcut.exe）。
+    /// 留空表示自动探测；自动探测失败时可在设置页指定。
+    /// </summary>
+    public string GuiDir { get; set; } = "";
     public bool ShowNewBadge { get; set; } = true;
     public DateTime? LastSyncUtc { get; set; }
     public string WorkDir { get; set; } = @"C:\SAPWorkDir";
