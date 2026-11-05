@@ -4,7 +4,7 @@
 """
 import json
 
-OUT_PDF = r"E:\WorkBuddy\SAP 登陆器\docs\SAP登录管理器-操作使用手册-User-Manual.pdf"
+OUT_PDF = r"E:\WorkBuddy\SAP 登陆器\SAP登录管理器-操作使用手册-User-Manual.pdf"
 FONT = r"C:\Windows\Fonts\msyh.ttc"
 GREY = "#5a5a5a"
 
@@ -86,8 +86,9 @@ p("操作使用手册  |  User Manual", font_size=17, alignment="center", space_
 p("中英双语版 · Chinese-English Bilingual Edition",
   font_size=11, alignment="center", font_color=GREY, space_after=18)
 kv([
-    ("软件版本 / Version", "GURURU202610272351"),
-    ("文档日期 / Date", "2026-10-28"),
+    ("软件版本 / Version", "GURURU202611051345"),
+    ("发行版本 / Release", "v1.5.3"),
+    ("文档日期 / Date", "2026-11-05"),
     ("适用平台 / Platform", "Windows 10 / 11（64 位）/ 64-bit"),
     ("SAP 客户端 / SAP GUI", "7.40 及以上（已在 8.0 实测）/ 7.40 or later (verified on 8.0)"),
     ("作者 / Author", "Gururu Nick"),
@@ -151,6 +152,20 @@ zh("本工具仅调用 SAP 官方的 sapshcut.exe / saplogon.exe，不修改 SAP
    space_before=6)
 en("This tool only invokes SAP's official sapshcut.exe / saplogon.exe. It does not modify SAP GUI files "
    "and never writes back to your SAP Logon configuration.")
+
+h2("2.1 SAP GUI 检测与手动指定", "2.1 SAP GUI Detection and Manual Override")
+zh("程序启动时自动探测 SAP GUI 安装位置，覆盖以下来源：")
+ul([
+    "注册表：HKLM / HKCU，含 32 位与 64 位视图（WOW6432Node）。/ Registry: HKLM / HKCU, both 32- and 64-bit views (WOW6432Node).",
+    "系统卸载项：显示名含 “SAP GUI” 或 “SAP Front End” 的安装条目。/ Uninstall entries whose display name contains “SAP GUI” or “SAP Front End”.",
+    "PATH 环境变量与 SAPGUI_DIR。/ The PATH environment variable and SAPGUI_DIR.",
+    "各固定磁盘下的 \\SAP\\FrontEnd\\SAPgui、\\Program Files\\...、\\Program Files (x86)\\...。/ Standard subfolders on every fixed drive.",
+], ordered=True)
+zh("若仍提示「未检测到 SAP GUI」：打开「设置 → SAP GUI」，点「浏览…」直接选中 saplogon.exe（或 sapshcut.exe），"
+   "点「重新检测」确认状态后保存。该路径会被记住，后续启动直接使用。检测失败时诊断信息中会列出已尝试的全部路径。")
+en("If SAP GUI is still not detected, open Settings → SAP GUI, click “Browse…” and pick saplogon.exe (or "
+   "sapshcut.exe), verify with “Detect again” and save. The path is remembered. When detection fails, the "
+   "diagnostics report lists every path that was tried.")
 
 # ============================== 3. 快速上手 ==============================
 h1("3. 快速上手", "3. Getting Started")
@@ -266,25 +281,26 @@ h1("8. 安全机制", "8. Security Mechanisms")
 kv([
     ("加密 / Encryption", "主密码经 PBKDF2-HMAC-SHA256（20 万次迭代）派生密钥，凭据以 AES-256-GCM 认证加密存储于 vault.dat / Credentials stored in vault.dat, encrypted with AES-256-GCM under a PBKDF2-HMAC-SHA256 (200,000 iterations) derived key"),
     ("记住主密码 / Remember", "可选。使用 Windows DPAPI 封装，仅当前 Windows 账户可解密；换电脑后需重新输入主密码 / Optional; wrapped with Windows DPAPI and bound to the current Windows account"),
-    ("闲置锁定 / Auto-lock", "默认 10 分钟无操作自动锁定（可调 0–720 分钟），锁定后需重新验证 / Locks after 10 minutes of inactivity (adjustable 0–720 min)"),
-    ("登录方式 / Logon path", "优先生成临时 .sap 文件交 SAP 官方程序执行，密码不出现在命令行；文件用后立即覆写并删除 / A temporary .sap file is passed to the official SAP executable; the password never appears on the command line; the file is overwritten and deleted after use"),
+    ("闲置锁定 / Auto-lock", "默认 0（不自动锁定），可调 0–720 分钟 / Disabled by default (0 min); adjustable 0–720 min"),
+    ("登录方式 / Logon path", "默认允许密码走命令行（sapshcut -pw），登录最直接；可在设置中关闭，改走「临时 .sap + 登录框自动填表」，此时密码不出现在命令行 / By default the password may appear in the sapshcut command line for a direct logon; disable it in Settings to use the temporary .sap + auto-fill path instead, where the password never reaches the command line"),
     ("日志 / Logging", "仅记录事件与错误码，从不记录密码 / Events and error codes only — passwords are never logged"),
 ], key_width=140)
 
 h2("8.1 自动填表安全底线", "8.1 Auto-Fill Safety Rules")
 zh("密码仅在 SAP 登录框出现时注入，填入前执行三重校验，任一不满足即放弃填表：")
 ul([
-    "只认 SAP 进程：窗口必须属于 SAP 安装目录下的 saplogon.exe / sapgui.exe / sapshcut.exe。/ SAP processes only: the window must belong to saplogon.exe / sapgui.exe / sapshcut.exe under the SAP installation directory.",
+    "只认 SAP 进程：窗口必须属于 saplogon.exe / sapgui.exe / sapshcut.exe，且其所在目录属于可信目录集合——检测到的安装目录、手动指定的目录，以及本程序实际启动过的 SAP exe 目录。/ SAP processes only: the window must belong to saplogon.exe / sapgui.exe / sapshcut.exe located in a trusted directory — the detected install folder, the manually specified folder, and any SAP executable folder this program actually launched.",
     "只认本次目标：窗口标题中的 SID 与客户端必须与本次登录一致，防止把 PRD 的密码填进其它系统。/ Current target only: the SID and client in the window title must match this logon attempt.",
     "一次登录最多填一次：再次弹框通常意味着密码已被拒绝，重复填写只会增加锁号风险。/ At most one fill per logon: a repeated dialog means the password was rejected; retrying risks locking the account.",
 ], ordered=True)
 en("The fill uses standard Win32 messages (WM_SETTEXT / BM_CLICK) with a read-back verification. No DLL "
    "injection, no keystroke simulation and no global hooks are involved.")
-note("登录采用「临时 .sap + 自动填表」而非命令行 -pw，是因为 SAP GUI 7.40 PL1 起 .sap 的密码字段被官方禁用"
-     "（SAP Note 146173），且命令行方式会把密码暴露在进程命令行中。",
-     "The “temporary .sap + auto-fill” approach is used because the .sap password field has been officially "
-     "disabled since SAP GUI 7.40 PL1 (SAP Note 146173), and command-line passwords are exposed in the "
-     "process command line.")
+note("默认登录路径为「命令行带密码」（最直接）；关闭「允许密码出现在命令行」后改走「临时 .sap + 自动填表」——"
+     "后者因 SAP GUI 7.40 PL1 起 .sap 的密码字段被官方禁用（SAP Note 146173），且命令行方式会把密码暴露在进程命令行中。",
+     "The default logon path passes the password on the command line (most direct). Disabling “Allow password "
+     "on the command line” switches to “temporary .sap + auto-fill”, because the .sap password field has been "
+     "officially disabled since SAP GUI 7.40 PL1 (SAP Note 146173) and command-line passwords are exposed in "
+     "the process command line.")
 
 # ============================== 9. 便捷功能 ==============================
 h1("9. 便捷功能", "9. Productivity Features")
@@ -326,10 +342,35 @@ zh("状态栏左下角显示当前构建版本，格式为 GURURU+YYYYMMDDHHMM�
 en("The status bar (bottom-left) shows the build version in GURURU+YYYYMMDDHHMM format (build timestamp, "
    "minute precision), also displayed in the About window.")
 
+h2("9.8 粘贴新建", "9.8 Paste to Create")
+zh("右键连接 →「复制连接信息」会生成一段不含密码的文本卡片（含名称、系统 ID、连接方式、Router、常用客户端、备注）。"
+   "点工具栏「粘贴新建」，程序解析该文本（或单行连接串）并预填一个新连接，保存后即为一条新记录。")
+ul([
+    "支持“复制连接信息”的分享文本。/ Supports the shared text produced by “Copy connection info”.",
+    "支持单行连接串：/H/主机/S/3200、/H/路由/H/主机/S/3200、/M/消息服务器/S/3600、主机:端口、SID 主机 端口。/ Single-line connection strings: /H/host/S/3200, /H/router/H/host/S/3200, /M/mshost/S/3600, host:port, SID host port.",
+], ordered=True)
+zh("新连接默认保存在当前显示的分组；若当前处于「全部系统」视图，则落在未分组。解析失败时会提示支持的格式。")
+en("The new connection is saved into the group currently displayed; in the “All systems” view it lands in "
+   "“Ungrouped”. A parse failure shows the supported formats.")
+
+h2("9.9 三维唯一指向", "9.9 Unique System Targeting")
+zh("同一台机器上可能存在系统标识（SID）相同的多套系统（例如两套都是 S4Q）。仅用 SID 启动会被 SAP 随机解析到其中一套。"
+   "程序按「应用服务器 + 实例编号 + 系统标识」三元组锁定端点：命令行追加 -guiparm 连接串，临时 .sap 写入 GuiParm，"
+   "确保打开的一定是目标系统。")
+en("One machine may host several systems sharing the same SID (e.g. two systems both called S4Q). Starting by "
+   "SID alone lets SAP resolve either one at random. The program pins the endpoint with the triple "
+   "application server + instance number + system ID: -guiparm is appended to the command line and GuiParm "
+   "is written into the temporary .sap file, so the intended system is always opened.")
+
 # ============================== 10. 登录机制与故障排查 ==============================
 h1("10. 登录机制与故障排查", "10. Logon Mechanism & Troubleshooting")
 
 h2("10.1 登录链", "10.1 Logon Chain")
+zh("默认路径（允许密码出现在命令行）：调用 sapshcut.exe 携带系统标识、连接串、客户端、语言、账号与密码，"
+   "由 SAP 直接完成登录，不出现登录框。")
+en("Default path (password on the command line): sapshcut.exe is invoked with the system ID, connection "
+   "string, client, language, account and password, so SAP completes the logon without showing a dialog.")
+zh("关闭该选项后的路径：")
 ul([
     "生成临时 .sap 文件：含显示名、连接串与账号（不带密码）。/ Generate a temporary .sap file with description, connection parameters and account (no password).",
     "调用 sapshcut.exe -open，由 SAP 按显示名从本机 landscape 精确定位系统。/ sapshcut.exe -open lets SAP resolve the system by its display name in the local landscape.",
@@ -357,7 +398,7 @@ en("To confirm the cause, check the logs in %LOCALAPPDATA%\\SapLauncher\\logs\\.
 
 h2("10.3 常见问题", "10.3 Frequently Asked Questions")
 kv([
-    ("未检测到 SAP GUI / Not detected", "未安装 SAP GUI 或安装在被裁剪的非标准目录。程序已覆盖注册表与标准路径查找；仍失败请安装 SAP GUI for Windows / SAP GUI is not installed or is in a non-standard directory; install SAP GUI for Windows"),
+    ("未检测到 SAP GUI / Not detected", "未安装 SAP GUI 或安装在被裁剪的非标准目录。程序已覆盖注册表、卸载项、PATH 与各盘符常见路径；仍失败请在「设置 → SAP GUI」中手动指定含 saplogon.exe 的目录 / SAP GUI is not installed or is in a non-standard directory; the program checks registry, uninstall entries, PATH and common paths on every drive — otherwise specify the folder containing saplogon.exe in Settings → SAP GUI"),
     ("列表里没有系统 / Empty list", "点「自动获取现有配置」（F5）；确认 SAP Logon 里能看到条目；查看 logs 中的同步警告 / Press F5; verify entries exist in SAP Logon; check sync warnings in logs"),
     ("连到另一套系统 / Wrong system", "SAP Logon 中存在同名显示名。本程序按显示名精确定位，请勿手工改乱名称 / Duplicate display names in SAP Logon; keep display names unique"),
     ("点击登录没反应 / No reaction", "查看状态栏与日志。常见原因：服务器不可达、账号被锁、需要先改密码 / Check the status bar and logs; typical causes: unreachable server, locked account, password change required"),
@@ -365,6 +406,16 @@ kv([
     ("关闭窗口后找不到程序 / Window lost", "默认最小化到托盘；双击托盘图标或按热键呼出，可在设置中关闭该行为 / The window minimizes to the tray by default; reopen via tray icon or hotkey"),
     ("杀软报警 / AV alert", "程序会调用 SAP 官方程序并写临时文件；请加入信任，或在设置中关闭「允许密码出现在命令行」/ The program invokes official SAP binaries and writes temporary files; add it to the trust list"),
 ], key_width=170)
+
+h2("10.4 分发与部署", "10.4 Distribution and Deployment")
+zh("本程序为 .NET 8 单文件发布，但 WPF 原生渲染库以旁置文件形式随 exe 发布。转发给同事时必须整包发送：")
+ul([
+    "SAP登录管理器.exe（旁置 DLL 版）：与同目录的 5 个 DLL（D3DCompiler_47_cor3、PenImc_cor3、PresentationNative_cor3、vcruntime140_cor3、wpfgfx_cor3）必须保持在同一目录。/ The exe with the five side-by-side DLLs — all files must stay in the same folder.",
+    "单文件版：原生库在首次运行时自解压到临时目录，可单独发送；若被本机安全策略禁止从 %TEMP% 加载，改用旁置 DLL 版。/ The single-file build extracts the native libraries to a temporary folder on first run; if that is blocked by policy, use the folder-based package.",
+], ordered=True)
+note("只发送 exe 会出现「双击后一直转圈、进程存在但没有界面」的现象——这是缺少原生库导致 WPF 无法初始化，并非程序逻辑问题。",
+     "Sending only the exe results in an endless spinner with no window: the WPF native libraries are missing, "
+     "not a program logic issue.")
 
 # ============================== 11. 导出、导入与分享 ==============================
 h1("11. 导出、导入与分享", "11. Export, Import & Sharing")
@@ -444,7 +495,7 @@ en("Requires the .NET 8 SDK. Run the command above in the project root; output g
    "dist\\SAP登录管理器.exe (self-contained single file with native libraries alongside). Alternatively, "
    "double-click “一键打包.bat” for a one-shot clean build.")
 hr()
-p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202610272351",
+p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611051345",
   font_size=9, alignment="center", font_color="#888888")
 
 # ============================== 输出配置 ==============================
