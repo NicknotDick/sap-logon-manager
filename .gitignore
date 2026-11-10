@@ -42,5 +42,12 @@ build/read_lnk.py
 release/
 build/out-*/
 docs/
+# 手册演示截图（纯虚构数据，可随源码交付）；docs 下其它旧截图仍忽略
+!docs/
+docs/*
+!docs/manual-shots/
+!docs/manual-shots/*.png
+# 本地预览用的手册副本（与根目录主 PDF 内容相同，不重复入库）
+*-插图版.pdf
 release-parts/
 build/verify-run/

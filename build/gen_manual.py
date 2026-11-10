@@ -3,10 +3,14 @@
 输出 build/manual_config.json，供 pdfkit pdf_create --config 使用。
 """
 import json
+import os
+import sys
 
 OUT_PDF = r"E:\WorkBuddy\SAP 登陆器\SAP登录管理器-操作使用手册-User-Manual.pdf"
 FONT = r"C:\Windows\Fonts\msyh.ttc"
 GREY = "#5a5a5a"
+# 手册插图目录：全部截图取自独立的虚构演示数据环境
+SHOTS = r"E:\WorkBuddy\SAP 登陆器\docs\manual-shots"
 
 E = []
 
@@ -68,6 +72,31 @@ def tbl(headers, rows, col_widths=None):
     E.append(d)
 
 
+_FIG_NO = 0
+
+
+def fig(name, caption_zh, caption_en, width=340):
+    """插入演示界面截图（图片位于 docs/manual-shots，全部为虚构数据）。
+
+    pdfkit 的 image 元素只给 width 时 ReportLab 会保留原始像素高度导致拉伸，
+    因此这里按图片实际宽高比显式给出 height。
+    """
+    global _FIG_NO
+    _FIG_NO += 1
+    from PIL import Image as PILImage
+    path = os.path.join(SHOTS, name)
+    with PILImage.open(path) as im:
+        w0, h0 = im.size
+    E.append({
+        "type": "image",
+        "path": path,
+        "width": width,
+        "height": round(width * h0 / w0, 2),
+        "alignment": "center",
+        "caption": f"图 {_FIG_NO} / Fig. {_FIG_NO} — {caption_zh} / {caption_en}",
+    })
+
+
 def spacer(h=10):
     E.append({"type": "spacer", "height": h})
 
@@ -120,6 +149,11 @@ ul([
     "15. 隐私与免责声明 / Privacy & Disclaimer",
     "16. 从源码构建 / Build from Source",
 ])
+spacer(6)
+note("插图声明：本手册所有界面截图均取自独立的演示数据环境，系统名、SID、主机地址、账号、分组与路径全部为虚构示例（IP 采用 RFC 5737 文档保留地址），截图中不含任何真实业务系统、服务器、账号或个人信息。",
+     "About the screenshots: every screenshot was captured in an isolated demo environment. System names, "
+     "SIDs, hosts, accounts, groups and paths are fabricated examples (IPs use RFC 5737 documentation "
+     "ranges). No real systems, servers, accounts or personal data appear in any screenshot.")
 pb()
 
 # ============================== 1. 产品概述 ==============================
@@ -166,6 +200,7 @@ zh("若仍提示「未检测到 SAP GUI」：打开「设置 → SAP GUI」，�
 en("If SAP GUI is still not detected, open Settings → SAP GUI, click “Browse…” and pick saplogon.exe (or "
    "sapshcut.exe), verify with “Detect again” and save. The path is remembered. When detection fails, the "
    "diagnostics report lists every path that was tried.")
+fig("settings-sapgui.png", "设置 → SAP GUI：检测结果与手动指定目录", "Settings → SAP GUI: detected installation and manual override", 400)
 
 # ============================== 3. 快速上手 ==============================
 h1("3. 快速上手", "3. Getting Started")
@@ -183,6 +218,7 @@ note("未启用主密码时，安全性依赖 Windows 账户登录与文件权�
      "file is readable by the current user only); enable a master password on shared PCs. If enabled and "
      "forgotten, credentials cannot be recovered by design — export encrypted backups regularly in "
      "Settings → Data & Diagnostics.")
+fig("vault-setup.png", "首次启动：主密码默认为可选项，不勾选即可直接进入", "First launch: master password protection is optional and off by default", 300)
 
 # ============================== 4. 主界面说明 ==============================
 h1("4. 主界面说明", "4. Main Window")
@@ -190,6 +226,7 @@ zh("主界面由顶部工具栏（搜索、自动获取现有配置、批量登�
    "中部系统列表与底部状态栏组成。")
 en("The main window consists of a top toolbar (search, sync, batch logon, new connection, sorting), a left "
    "navigation pane (All Systems / Favorites / custom groups), the system list and a status bar.")
+fig("main.png", "主界面全貌：工具栏、分组导航、系统列表与状态栏（演示数据）", "Main window: toolbar, group navigation, system list and status bar (demo data)", 440)
 
 h2("4.1 系统列表", "4.1 System List")
 zh("每行展示：环境徽标（DEV 绿 / QAS 橙 / PRD 红）· 系统名 · SID · 连接方式 · 上次登录时间 · 客户端 · "
@@ -209,6 +246,7 @@ h2("4.3 连通性指示", "4.3 Connectivity Indicator")
 zh("绿色 = 可连通；红色 = 不可达；黄色 = 检测中。经 Router 的系统探测 Router 端口（3299），负载均衡系统探测消息服务器端口（3600）。")
 en("Green = reachable; red = unreachable; yellow = probing. Router-based systems probe the Router port "
    "(3299); load-balanced systems probe the message server port (3600).")
+fig("main-rows.png", "系统列表：连接参数、客户端、连通性圆点与登录按钮", "System list: connection parameters, client, connectivity dot and logon button", 400)
 
 h2("4.4 连通状态即时刷新（v1.6.0 起）", "4.4 Live Connectivity Refresh (since v1.6.0)")
 zh("连通状态在下列时机自动重新探测，无需手动刷新：")
@@ -230,6 +268,7 @@ zh("点击「自动获取现有配置」或按 F5，程序会重新读取 %APPDA
 en("Click “Sync from SAP Logon” or press F5. The program re-reads %APPDATA%\\SAP\\Common\\SAPUILandscape.xml "
    "(including <Includes> references; older installations fall back to saplogon.ini) and merges it with the "
    "local list using these rules:")
+fig("main-toolbar.png", "顶部工具栏的「自动获取现有配置」按钮（快捷键 F5）", "“Sync from SAP Logon” button on the top toolbar (F5)", 440)
 kv([
     ("新系统 / New", "追加到列表并标注 NEW，保留你已有的分组与收藏 / Appended and tagged NEW; existing groups and favorites preserved"),
     ("连接参数变更 / Updated", "更新 host、端口、Router 与备注；凭据、收藏、分组、脚本绑定全部保留 / Connection parameters updated; credentials, favorites, groups and script bindings retained"),
@@ -257,6 +296,7 @@ ul([
     "失败不会自动重试，避免账号被锁定 / Failed items are not retried automatically (prevents account lockout)",
     "结束后可「复制结果」留档 / Results can be copied for the record",
 ])
+fig("batch.png", "批量登录窗口：执行前结果列表为空，开始后逐条显示结果", "Batch logon window: the result list is empty before the run", 300)
 
 # ============================== 7. 凭据与账号管理 ==============================
 h1("7. 凭据与账号管理", "7. Credentials & Account Management")
@@ -273,6 +313,7 @@ kv([
     ("切换客户端 / Switch client", "客户端下拉一改，账号列表随之切换（每个客户端各自最多 8 个）/ The account list follows the selected client (8 per client)"),
     ("达到上限 / Limit reached", "第 9 个账号会被拒绝并提示，需先删除不用的账号 / A 9th account is rejected with a prompt"),
 ], key_width=140)
+fig("editor-multi.png", "连接属性中的多账号列表与「设为默认」（示例账号）", "Multiple accounts in connection properties, with “Set default” (demo accounts)", 300)
 
 h2("7.2 账号姓名字段", "7.2 Display Name")
 zh("账号可绑定「姓名（可选）」。保存后，登录菜单、主列表「上次登录」等处统一显示为「姓名 (账号)」"
@@ -300,6 +341,7 @@ kv([
     ("登录方式 / Logon path", "默认允许密码走命令行（sapshcut -pw），登录最直接；可在设置中关闭，改走「临时 .sap + 登录框自动填表」，此时密码不出现在命令行 / By default the password may appear in the sapshcut command line for a direct logon; disable it in Settings to use the temporary .sap + auto-fill path instead, where the password never reaches the command line"),
     ("日志 / Logging", "仅记录事件与错误码，从不记录密码 / Events and error codes only — passwords are never logged"),
 ], key_width=140)
+fig("settings.png", "设置 → 安全：主密码可选、闲置锁定、命令行密码，以及 SAP GUI 检测", "Settings → Security: optional master password, idle lock, command-line password and SAP GUI detection", 320)
 
 h2("8.1 自动填表安全底线", "8.1 Auto-Fill Safety Rules")
 zh("密码仅在 SAP 登录框出现时注入，填入前执行三重校验，任一不满足即放弃填表：")
@@ -361,6 +403,7 @@ h2("9.7 版本标识", "9.7 Version Tag")
 zh("状态栏左下角显示当前构建版本，格式为 GURURU+YYYYMMDDHHMM（取自构建时间，精确到分钟），「关于」窗口中同步展示。")
 en("The status bar (bottom-left) shows the build version in GURURU+YYYYMMDDHHMM format (build timestamp, "
    "minute precision), also displayed in the About window.")
+fig("about.png", "关于窗口中的版本标识与数据目录", "Version tag and data directory in the About window", 300)
 
 h2("9.8 粘贴新建", "9.8 Paste to Create")
 zh("右键连接 →「复制连接信息」会生成一段不含密码的文本卡片（含名称、系统 ID、连接方式、Router、常用客户端、备注）。"
@@ -372,12 +415,13 @@ ul([
 zh("新连接默认保存在当前显示的分组；若当前处于「全部系统」视图，则落在未分组。解析失败时会提示支持的格式。")
 en("The new connection is saved into the group currently displayed; in the “All systems” view it lands in "
    "“Ungrouped”. A parse failure shows the supported formats.")
+fig("entry-editor.png", "新增连接窗口：粘贴新建后核对字段并保存", "New connection window: review the parsed fields and save", 300)
 
 h2("9.9 三维唯一指向", "9.9 Unique System Targeting")
-zh("同一台机器上可能存在系统标识（SID）相同的多套系统（例如两套都是 S4Q）。仅用 SID 启动会被 SAP 随机解析到其中一套。"
+zh("同一台机器上可能存在系统标识（SID）相同的多套系统（例如两套都是 DM1）。仅用 SID 启动会被 SAP 随机解析到其中一套。"
    "程序按「应用服务器 + 实例编号 + 系统标识」三元组锁定端点：命令行追加 -guiparm 连接串，临时 .sap 写入 GuiParm，"
    "确保打开的一定是目标系统。")
-en("One machine may host several systems sharing the same SID (e.g. two systems both called S4Q). Starting by "
+en("One machine may host several systems sharing the same SID (e.g. two systems both called DM1). Starting by "
    "SID alone lets SAP resolve either one at random. The program pins the endpoint with the triple "
    "application server + instance number + system ID: -guiparm is appended to the command line and GuiParm "
    "is written into the temporary .sap file, so the intended system is always opened.")
@@ -444,6 +488,7 @@ ul([
     "导入：先预览（新增 / 覆盖 / 跳过），可勾选「覆盖同名连接」「同时导入分组」；导错可在设置里回滚快照。/ Import: preview first (add / overwrite / skip), with options to overwrite same-name connections and import groups; a snapshot rollback is available if something goes wrong.",
     "分享：右键连接 →「复制连接信息」，生成不含密码的文本卡片，可直接粘贴到即时通讯工具。/ Share: right-click → “Copy connection info” produces a password-free text card ready to paste into a chat tool.",
 ])
+fig("import.png", "导入窗口：预览、覆盖同名连接与含凭据文件的导入密码", "Import window: preview, overwrite and the password for credential-bearing files", 300)
 
 # ============================== 12. 脚本管理 ==============================
 h1("12. 脚本管理", "12. Script Management")
@@ -455,6 +500,7 @@ en("SAP GUI scripts (VBScript) can run automatically after a successful logon: r
 note("需要服务器端启用 sapgui/user_scripting = TRUE，且客户端勾选「启用脚本」。不满足时脚本会失败并提示，但不影响正常登录。",
      "Requires sapgui/user_scripting = TRUE on the server and “Enable scripting” on the client. If not "
      "satisfied the script fails with a notice but normal logon is unaffected.")
+fig("scripts.png", "脚本管理：新建脚本、试运行与绑定到当前连接", "Script manager: create, trial-run and bind scripts", 380)
 
 # ============================== 13. 快捷键 ==============================
 h1("13. 快捷键", "13. Keyboard Shortcuts")
@@ -465,6 +511,7 @@ tbl(["快捷键 / Key", "功能 / Action"],
      ["Ctrl + Alt + S", "全局快速搜索窗 / Global quick-search window"],
      ["Esc", "清空搜索或关闭快速搜索 / Clear search or close quick search"]],
     col_widths=[125, 325])
+fig("quicksearch.png", "全局快速搜索窗（Ctrl+Alt+S）：输入名称或 SID 后回车即登录", "Global quick-search window (Ctrl+Alt+S): type a name or SID and press Enter to log on", 300)
 zh("快速搜索窗：输入名称或 SID，↑↓ 选择，Enter 立即登录，Esc 关闭。全局热键可在设置中修改。",
    space_before=4)
 en("Quick search: type a name or SID, choose with ↑↓, press Enter to log on, Esc to close. The global "
@@ -542,4 +589,11 @@ config = {
 with open(r"E:\WorkBuddy\SAP 登陆器\build\manual_config.json", "w", encoding="utf-8") as f:
     json.dump(config, f, ensure_ascii=False, indent=1)
 
-print(f"OK elements={len(E)} -> build/manual_config.json")
+print(f"OK elements={len(E)} figs={_FIG_NO} -> build/manual_config.json")
+
+# 加 --build 时直接调用 pdfkit 生成 PDF；不带参数时仅输出排版配置 JSON
+if "--build" in sys.argv:
+    sys.path.insert(0, r"C:\Users\camyo\.workbuddy\skills\pdfkit-py\scripts")
+    from pdfkit.commands.pdf_create import handler
+    result = handler(config)
+    print("PDF:", result["output"], "bytes:", result["file_size_bytes"])

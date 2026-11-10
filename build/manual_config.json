@@ -119,6 +119,22 @@
    "font_size": 10.5
   },
   {
+   "type": "spacer",
+   "height": 6
+  },
+  {
+   "type": "paragraph",
+   "text": "插图声明：本手册所有界面截图均取自独立的演示数据环境，系统名、SID、主机地址、账号、分组与路径全部为虚构示例（IP 采用 RFC 5737 文档保留地址），截图中不含任何真实业务系统、服务器、账号或个人信息。",
+   "bg_color": "#FFF8E1",
+   "border_color": "#F0C36D"
+  },
+  {
+   "type": "paragraph",
+   "text": "About the screenshots: every screenshot was captured in an isolated demo environment. System names, SIDs, hosts, accounts, groups and paths are fabricated examples (IPs use RFC 5737 documentation ranges). No real systems, servers, accounts or personal data appear in any screenshot.",
+   "font_color": "#5a5a5a",
+   "space_after": 10
+  },
+  {
    "type": "page_break"
   },
   {
@@ -229,6 +245,14 @@
    "space_after": 10
   },
   {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\settings-sapgui.png",
+   "width": 400,
+   "height": 173.53,
+   "alignment": "center",
+   "caption": "图 1 / Fig. 1 — 设置 → SAP GUI：检测结果与手动指定目录 / Settings → SAP GUI: detected installation and manual override"
+  },
+  {
    "type": "heading",
    "text": "3. 快速上手 / 3. Getting Started",
    "level": 1
@@ -262,6 +286,14 @@
    "space_after": 10
   },
   {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\vault-setup.png",
+   "width": 300,
+   "height": 188.86,
+   "alignment": "center",
+   "caption": "图 2 / Fig. 2 — 首次启动：主密码默认为可选项，不勾选即可直接进入 / First launch: master password protection is optional and off by default"
+  },
+  {
    "type": "heading",
    "text": "4. 主界面说明 / 4. Main Window",
    "level": 1
@@ -275,6 +307,14 @@
    "text": "The main window consists of a top toolbar (search, sync, batch logon, new connection, sorting), a left navigation pane (All Systems / Favorites / custom groups), the system list and a status bar.",
    "font_color": "#5a5a5a",
    "space_after": 10
+  },
+  {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\main.png",
+   "width": 440,
+   "height": 196.46,
+   "alignment": "center",
+   "caption": "图 3 / Fig. 3 — 主界面全貌：工具栏、分组导航、系统列表与状态栏（演示数据） / Main window: toolbar, group navigation, system list and status bar (demo data)"
   },
   {
    "type": "heading",
@@ -332,6 +372,14 @@
    "space_after": 10
   },
   {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\main-rows.png",
+   "width": 400,
+   "height": 175.82,
+   "alignment": "center",
+   "caption": "图 4 / Fig. 4 — 系统列表：连接参数、客户端、连通性圆点与登录按钮 / System list: connection parameters, client, connectivity dot and logon button"
+  },
+  {
    "type": "heading",
    "text": "4.4 连通状态即时刷新（v1.6.0 起） / 4.4 Live Connectivity Refresh (since v1.6.0)",
    "level": 2
@@ -374,6 +422,14 @@
    "text": "Click “Sync from SAP Logon” or press F5. The program re-reads %APPDATA%\\SAP\\Common\\SAPUILandscape.xml (including <Includes> references; older installations fall back to saplogon.ini) and merges it with the local list using these rules:",
    "font_color": "#5a5a5a",
    "space_after": 10
+  },
+  {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\main-toolbar.png",
+   "width": 440,
+   "height": 37.05,
+   "alignment": "center",
+   "caption": "图 5 / Fig. 5 — 顶部工具栏的「自动获取现有配置」按钮（快捷键 F5） / “Sync from SAP Logon” button on the top toolbar (F5)"
   },
   {
    "type": "key_value",
@@ -444,6 +500,14 @@
    "font_size": 10.5
   },
   {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\batch.png",
+   "width": 300,
+   "height": 259.09,
+   "alignment": "center",
+   "caption": "图 6 / Fig. 6 — 批量登录窗口：执行前结果列表为空，开始后逐条显示结果 / Batch logon window: the result list is empty before the run"
+  },
+  {
    "type": "heading",
    "text": "7. 凭据与账号管理 / 7. Credentials & Account Management",
    "level": 1
@@ -488,6 +552,14 @@
     }
    ],
    "key_width": 140
+  },
+  {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\editor-multi.png",
+   "width": 300,
+   "height": 379.17,
+   "alignment": "center",
+   "caption": "图 7 / Fig. 7 — 连接属性中的多账号列表与「设为默认」（示例账号） / Multiple accounts in connection properties, with “Set default” (demo accounts)"
   },
   {
    "type": "heading",
@@ -561,6 +633,14 @@
     }
    ],
    "key_width": 140
+  },
+  {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\settings.png",
+   "width": 320,
+   "height": 351.11,
+   "alignment": "center",
+   "caption": "图 8 / Fig. 8 — 设置 → 安全：主密码可选、闲置锁定、命令行密码，以及 SAP GUI 检测 / Settings → Security: optional master password, idle lock, command-line password and SAP GUI detection"
   },
   {
    "type": "heading",
@@ -722,6 +802,14 @@
    "space_after": 10
   },
   {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\about.png",
+   "width": 300,
+   "height": 225.58,
+   "alignment": "center",
+   "caption": "图 9 / Fig. 9 — 关于窗口中的版本标识与数据目录 / Version tag and data directory in the About window"
+  },
+  {
    "type": "heading",
    "text": "9.8 粘贴新建 / 9.8 Paste to Create",
    "level": 2
@@ -750,17 +838,25 @@
    "space_after": 10
   },
   {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\entry-editor.png",
+   "width": 300,
+   "height": 379.17,
+   "alignment": "center",
+   "caption": "图 10 / Fig. 10 — 新增连接窗口：粘贴新建后核对字段并保存 / New connection window: review the parsed fields and save"
+  },
+  {
    "type": "heading",
    "text": "9.9 三维唯一指向 / 9.9 Unique System Targeting",
    "level": 2
   },
   {
    "type": "paragraph",
-   "text": "同一台机器上可能存在系统标识（SID）相同的多套系统（例如两套都是 S4Q）。仅用 SID 启动会被 SAP 随机解析到其中一套。程序按「应用服务器 + 实例编号 + 系统标识」三元组锁定端点：命令行追加 -guiparm 连接串，临时 .sap 写入 GuiParm，确保打开的一定是目标系统。"
+   "text": "同一台机器上可能存在系统标识（SID）相同的多套系统（例如两套都是 DM1）。仅用 SID 启动会被 SAP 随机解析到其中一套。程序按「应用服务器 + 实例编号 + 系统标识」三元组锁定端点：命令行追加 -guiparm 连接串，临时 .sap 写入 GuiParm，确保打开的一定是目标系统。"
   },
   {
    "type": "paragraph",
-   "text": "One machine may host several systems sharing the same SID (e.g. two systems both called S4Q). Starting by SID alone lets SAP resolve either one at random. The program pins the endpoint with the triple application server + instance number + system ID: -guiparm is appended to the command line and GuiParm is written into the temporary .sap file, so the intended system is always opened.",
+   "text": "One machine may host several systems sharing the same SID (e.g. two systems both called DM1). Starting by SID alone lets SAP resolve either one at random. The program pins the endpoint with the triple application server + instance number + system ID: -guiparm is appended to the command line and GuiParm is written into the temporary .sap file, so the intended system is always opened.",
    "font_color": "#5a5a5a",
    "space_after": 10
   },
@@ -919,6 +1015,14 @@
    "font_size": 10.5
   },
   {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\import.png",
+   "width": 300,
+   "height": 276.56,
+   "alignment": "center",
+   "caption": "图 11 / Fig. 11 — 导入窗口：预览、覆盖同名连接与含凭据文件的导入密码 / Import window: preview, overwrite and the password for credential-bearing files"
+  },
+  {
    "type": "heading",
    "text": "12. 脚本管理 / 12. Script Management",
    "level": 1
@@ -944,6 +1048,14 @@
    "text": "Requires sapgui/user_scripting = TRUE on the server and “Enable scripting” on the client. If not satisfied the script fails with a notice but normal logon is unaffected.",
    "font_color": "#5a5a5a",
    "space_after": 10
+  },
+  {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\scripts.png",
+   "width": 380,
+   "height": 280.68,
+   "alignment": "center",
+   "caption": "图 12 / Fig. 12 — 脚本管理：新建脚本、试运行与绑定到当前连接 / Script manager: create, trial-run and bind scripts"
   },
   {
    "type": "heading",
@@ -984,6 +1096,14 @@
     125,
     325
    ]
+  },
+  {
+   "type": "image",
+   "path": "E:\\WorkBuddy\\SAP 登陆器\\docs\\manual-shots\\quicksearch.png",
+   "width": 300,
+   "height": 229.69,
+   "alignment": "center",
+   "caption": "图 13 / Fig. 13 — 全局快速搜索窗（Ctrl+Alt+S）：输入名称或 SID 后回车即登录 / Global quick-search window (Ctrl+Alt+S): type a name or SID and press Enter to log on"
   },
   {
    "type": "paragraph",
