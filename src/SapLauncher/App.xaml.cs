@@ -139,7 +139,16 @@ public partial class App : Application
         _single = new SingleInstance();
         if (!_single.Acquire())
         {
-            // 已被占用：给出提醒，并允许结束占用进程后继续启动
+            // 已有实例在运行：默认直接把它的窗口唤到前台，然后退出本次启动。
+            // （旧行为是弹框询问，用户容易看不到弹窗而误以为「打不开」）
+            if (SingleInstance.NotifyExisting("show"))
+            {
+                Log.Info("已有实例在运行，已唤出其窗口，本次启动退出");
+                Shutdown();
+                return;
+            }
+
+            // 通知失败（旧实例管道异常）：给出提醒，并允许结束占用进程后继续启动
             var others = OtherInstances();
             var choice = MessageBox.Show(
                 "检测到「SAP 登录管理器」已经在运行（可能是上次没有正常退出的进程）。\n\n" +
