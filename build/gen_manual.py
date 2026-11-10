@@ -86,9 +86,9 @@ p("操作使用手册  |  User Manual", font_size=17, alignment="center", space_
 p("中英双语版 · Chinese-English Bilingual Edition",
   font_size=11, alignment="center", font_color=GREY, space_after=18)
 kv([
-    ("软件版本 / Version", "GURURU202611051345"),
-    ("发行版本 / Release", "v1.5.3"),
-    ("文档日期 / Date", "2026-11-05"),
+    ("软件版本 / Version", "GURURU202611102025"),
+    ("发行版本 / Release", "v1.6.1"),
+    ("文档日期 / Date", "2026-11-10"),
     ("适用平台 / Platform", "Windows 10 / 11（64 位）/ 64-bit"),
     ("SAP 客户端 / SAP GUI", "7.40 及以上（已在 8.0 实测）/ 7.40 or later (verified on 8.0)"),
     ("作者 / Author", "Gururu Nick"),
@@ -172,16 +172,17 @@ h1("3. 快速上手", "3. Getting Started")
 zh("首次使用约需 1 分钟：")
 ul([
     "双击 SAP登录管理器.exe 启动程序。/ Double-click SAP登录管理器.exe to launch the program.",
-    "设置主密码（至少 6 位）；建议勾选「记住主密码」以便下次免输。/ Set a master password (at least 6 characters); optionally enable “Remember master password”.",
+    "主密码是可选的：默认不启用保护，直接进入；需要时勾选「启用主密码保护」并设置至少 6 位。/ The master password is optional: the program opens directly by default; check “Enable master password protection” to set one of at least 6 characters.",
     "点击右上角「自动获取现有配置」（快捷键 F5），扫描本机 SAP Logon 并列出全部系统。/ Click “Sync from SAP Logon” (F5) to scan and list all systems.",
     "双击某个系统（或点其「登录」按钮），填入账号密码，勾选「保存密码并自动登录」后保存。/ Double-click a system (or click “Log on”), enter credentials and check “Save password and log on automatically”.",
     "之后登录只需双击，即直达 SAP 系统界面。/ From then on, a double-click opens the SAP system directly.",
 ], ordered=True)
-note("主密码遗忘后，已保存的凭据无法恢复（这是加密的设计，不是缺陷）。请在「设置 → 数据与诊断」中定期导出加密备份；"
-     "也可启用 Windows Hello 或使用 Windows 账户密码解锁（见第 9 章）。",
-     "If the master password is lost, stored credentials cannot be recovered by design. Export encrypted "
-     "backups regularly in Settings → Data & Diagnostics; alternatively enable Windows Hello or Windows "
-     "account password recovery (see Chapter 9).")
+note("未启用主密码时，安全性依赖 Windows 账户登录与文件权限（凭据文件仅当前用户可读）；共享电脑上建议启用主密码。"
+     "启用后若主密码遗忘，已保存凭据无法恢复（这是加密的设计，不是缺陷），请在「设置 → 数据与诊断」中定期导出加密备份。",
+     "Without a master password, protection relies on the Windows account and file permissions (the credential "
+     "file is readable by the current user only); enable a master password on shared PCs. If enabled and "
+     "forgotten, credentials cannot be recovered by design — export encrypted backups regularly in "
+     "Settings → Data & Diagnostics.")
 
 # ============================== 4. 主界面说明 ==============================
 h1("4. 主界面说明", "4. Main Window")
@@ -208,6 +209,19 @@ h2("4.3 连通性指示", "4.3 Connectivity Indicator")
 zh("绿色 = 可连通；红色 = 不可达；黄色 = 检测中。经 Router 的系统探测 Router 端口（3299），负载均衡系统探测消息服务器端口（3600）。")
 en("Green = reachable; red = unreachable; yellow = probing. Router-based systems probe the Router port "
    "(3299); load-balanced systems probe the message server port (3600).")
+
+h2("4.4 连通状态即时刷新（v1.6.0 起）", "4.4 Live Connectivity Refresh (since v1.6.0)")
+zh("连通状态在下列时机自动重新探测，无需手动刷新：")
+ul([
+    "窗口回到前台：从托盘恢复、切回本程序时立即探测一次。/ The window returns to the foreground: probing starts immediately when the window is restored from the tray or brought forward.",
+    "窗口内有操作：鼠标移动或点击、键盘输入、滚轮滚动，满足节流条件后立即探测。/ Interaction inside the window: mouse move or click, keyboard input or wheel — probing starts as soon as the throttling conditions allow.",
+    "节流规则：操作判定窗口 3 秒，两次探测最小间隔 30 秒；窗口隐藏（最小化到托盘）时不探测。/ Throttling: activity window 3 seconds, minimum interval between two probes 30 seconds; no probing while the window is hidden in the tray.",
+], ordered=True)
+zh("探测方式是 TCP 连接（1.5 秒超时），只连接 SAP 服务器端口，不发送 ICMP ping，也不会触发任何 SAP 登录动作。"
+   "若探测被新一轮刷新取代，圆点会回到「未知」而不是停留在「检测中」。")
+en("Probing uses a TCP connection (1.5 s timeout) against the SAP server port only — no ICMP ping and no SAP "
+   "logon activity. If a probe is superseded by a newer one, the dot returns to “unknown” instead of "
+   "staying in “probing”.")
 
 # ============================== 5. 配置同步 ==============================
 h1("5. 配置同步", "5. Configuration Sync")
@@ -281,6 +295,7 @@ h1("8. 安全机制", "8. Security Mechanisms")
 kv([
     ("加密 / Encryption", "主密码经 PBKDF2-HMAC-SHA256（20 万次迭代）派生密钥，凭据以 AES-256-GCM 认证加密存储于 vault.dat / Credentials stored in vault.dat, encrypted with AES-256-GCM under a PBKDF2-HMAC-SHA256 (200,000 iterations) derived key"),
     ("记住主密码 / Remember", "可选。使用 Windows DPAPI 封装，仅当前 Windows 账户可解密；换电脑后需重新输入主密码 / Optional; wrapped with Windows DPAPI and bound to the current Windows account"),
+    ("主密码 / Master password", "可选。默认不启用，打开即用；启用后凭据库需主密码才能解锁，忘记则无法恢复 / Optional. Disabled by default (opens directly); when enabled the vault requires the master password and cannot be recovered if forgotten"),
     ("闲置锁定 / Auto-lock", "默认 0（不自动锁定），可调 0–720 分钟 / Disabled by default (0 min); adjustable 0–720 min"),
     ("登录方式 / Logon path", "默认允许密码走命令行（sapshcut -pw），登录最直接；可在设置中关闭，改走「临时 .sap + 登录框自动填表」，此时密码不出现在命令行 / By default the password may appear in the sapshcut command line for a direct logon; disable it in Settings to use the temporary .sap + auto-fill path instead, where the password never reaches the command line"),
     ("日志 / Logging", "仅记录事件与错误码，从不记录密码 / Events and error codes only — passwords are never logged"),
@@ -333,9 +348,14 @@ en("Press and hold a system or group for about 0.4 seconds, then drag to reorder
    "back immediately and promoted to a custom order automatically.")
 
 h2("9.6 单实例与占用提醒", "9.6 Single Instance & Occupancy Prompt")
-zh("程序为单实例。若已有实例在运行，再次启动时会提示：切换到已运行的窗口、或一键结束占用进程后重启、或退出。")
-en("The program runs as a single instance. Launching it again offers to switch to the running window, "
-   "terminate the occupying process and restart, or exit.")
+zh("程序为单实例。若已有实例在运行，v1.6.1 起再次启动会直接把已有窗口唤到前台并退出本次启动；"
+   "只有在旧版本实例不响应唤出指令时，才会提示：切换到已运行的窗口、或一键结束占用进程后重启、或退出。")
+en("The program runs as a single instance. Since v1.6.1, launching it again brings the running window to the "
+   "foreground and exits this launch; the prompt (switch to the running window / terminate the occupying "
+   "process and restart / quit) only appears when an older instance does not respond to the request.")
+note("从旧版本升级时，请先在托盘中退出旧实例再启动新版本，否则旧实例可能不响应唤出指令，表现为「双击无反应」。",
+     "When upgrading from an older version, exit the old instance from the tray first — it may not respond to "
+     "the request, which looks like “nothing happens on double-click”.")
 
 h2("9.7 版本标识", "9.7 Version Tag")
 zh("状态栏左下角显示当前构建版本，格式为 GURURU+YYYYMMDDHHMM（取自构建时间，精确到分钟），「关于」窗口中同步展示。")
@@ -495,7 +515,7 @@ en("Requires the .NET 8 SDK. Run the command above in the project root; output g
    "dist\\SAP登录管理器.exe (self-contained single file with native libraries alongside). Alternatively, "
    "double-click “一键打包.bat” for a one-shot clean build.")
 hr()
-p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611051345",
+p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611102025",
   font_size=9, alignment="center", font_color="#888888")
 
 # ============================== 输出配置 ==============================
