@@ -75,11 +75,11 @@
     <sys:String x:Key="Batch.None">Select systems in the list first</sys:String>
 
     <sys:String x:Key="Unlock.Title">Unlock vault</sys:String>
-    <sys:String x:Key="Unlock.SetupTitle">Set master password</sys:String>
+        <sys:String x:Key="Unlock.SetupTitle">Master password (optional)</sys:String>
     <sys:String x:Key="Unlock.Password">Master password</sys:String>
     <sys:String x:Key="Unlock.Confirm">Confirm master password</sys:String>
     <sys:String x:Key="Unlock.Remember">Remember master password (auto unlock on this PC)</sys:String>
-    <sys:String x:Key="Unlock.Hint">The master password only protects data locally with AES-256. It is never uploaded and cannot be recovered if forgotten.</sys:String>
+        <sys:String x:Key="Unlock.Hint">The master password is used only for local AES-256 encryption and is never uploaded. If enabled and forgotten, credentials cannot be recovered; without it the program opens directly.</sys:String>
     <sys:String x:Key="Unlock.Wrong">Wrong master password or corrupted vault</sys:String>
     <sys:String x:Key="Unlock.Mismatch">Passwords do not match</sys:String>
     <sys:String x:Key="Unlock.TooShort">At least 6 characters</sys:String>
@@ -252,4 +252,8 @@
     <sys:String x:Key="Settings.GuiMissing">SAP GUI not detected: install SAP GUI for Windows, or specify the installation folder below.</sys:String>
     <sys:String x:Key="Settings.GuiTried">Paths tried</sys:String>
     <sys:String x:Key="Btn.AllFiles">All files</sys:String>
+    <sys:String x:Key="Unlock.UsePassword">Enable master password protection</sys:String>
+    <sys:String x:Key="Unlock.UsePasswordHint">Leave unchecked to enter immediately: credentials are still encrypted locally, but protected only by the Windows account and file permissions. You can enable a master password later in Settings.</sys:String>
+    <sys:String x:Key="Settings.MasterPwOn">Master password protection: enabled. The password is required on every launch; use “Change master password” below to modify it.</sys:String>
+    <sys:String x:Key="Settings.MasterPwOff">Master password protection: disabled. The program opens directly; credentials are protected only by the Windows account and file permissions. Use “Change master password” below to enable it.</sys:String>
 </ResourceDictionary>

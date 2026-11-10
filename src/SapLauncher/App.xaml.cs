@@ -225,15 +225,28 @@ public partial class App : Application
 
         if (!needSetup)
         {
-            // 仅「未启用 Windows Hello」时静默解锁；启用 Hello 时进入解锁对话框，
-            // 由对话框在窗口显示后再异步弹出 Hello，避免启动阶段阻塞导致「双击无反应」。
+            // 顺序：先用已保存的主密码（老用户，零额外开销）→ 再试空密码（未启用主密码保护）。
+            // 以凭据库「实际能否用空密码打开」为准，manifest 里的标记只用于展示。
             var saved = KeyProtection.LoadPassword();
             if (!string.IsNullOrEmpty(saved) && !AppServices.Settings.UseWindowsHello &&
                 AppServices.Vault.Unlock(saved, out _))
             {
+                AppServices.Settings.MasterPasswordRequired = true;
+                AppServices.Manifest.Save();
                 Log.Info("使用已保存的主密码自动解锁");
                 return true;
             }
+
+            if (AppServices.Vault.Unlock("", out _))
+            {
+                AppServices.Settings.MasterPasswordRequired = false;
+                AppServices.Manifest.Save();
+                Log.Info("未启用主密码保护，直接解锁");
+                return true;
+            }
+
+            AppServices.Settings.MasterPasswordRequired = true;
+            AppServices.Manifest.Save();
         }
 
         var dlg = new VaultDialog(needSetup ? VaultMode.Setup : VaultMode.Unlock);

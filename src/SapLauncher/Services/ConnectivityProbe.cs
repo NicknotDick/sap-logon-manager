@@ -68,7 +68,13 @@ public static class ConnectivityProbe
         {
             s.Probe = ProbeState.Probing;
             var (state, ms) = await ProbeAsync(s, 1500, ct).ConfigureAwait(false);
-            if (ct.IsCancellationRequested) return;
+            if (ct.IsCancellationRequested)
+            {
+                // 被新一轮探测取消：复位为「未知」，避免圆点永久停在「检测中」
+                s.Probe = ProbeState.Unknown;
+                s.ProbeLatency = 0;
+                return;
+            }
             s.Probe = state;
             s.ProbeLatency = ms;
         });

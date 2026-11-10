@@ -65,7 +65,7 @@ public sealed class LogonDialogGuard
 
             // 两种标题格式都支持：
             //   ① 命令行 -system 启动："SAP GUI 快捷方式 - 登录 (PRD, 800, ZH, )"
-            //   ② .sap 启动：标题即 SAP Logon 显示名，如 "DeRUCCI PRD"（不含 SID/客户端）
+            //   ② .sap 启动：标题即 SAP Logon 显示名，如 "DEMO PRD"（不含 SID/客户端）
             LogonDialogInfo info;
             if (TryParseLogonTitle(title, out var parsed)) info = parsed;
             else if (TryMatchDisplayName(title, out var byName)) info = byName;
@@ -134,7 +134,7 @@ public sealed class LogonDialogGuard
     /// <summary>
     /// 把窗口标题解析为登录信息，支持两种实测格式：
     ///   ① 命令行 -system 启动：<c>SAP GUI 快捷方式 - 登录 (PRD, 800, ZH, )</c>
-    ///   ② .sap 启动：标题即 SAP Logon 显示名，如 <c>DeRUCCI PRD</c>（不含 SID/客户端）
+    ///   ② .sap 启动：标题即 SAP Logon 显示名，如 <c>DEMO PRD</c>（不含 SID/客户端）
     /// 返回 null 表示该标题不是可识别的登录框。
     /// </summary>
     public LogonDialogInfo? MatchTitle(string? title)
@@ -145,7 +145,7 @@ public sealed class LogonDialogGuard
     }
 
     /// <summary>
-    /// 格式②：.sap 启动时登录框标题就是 SAP Logon 里的显示名（实测 "DeRUCCI PRD"），
+    /// 格式②：.sap 启动时登录框标题就是 SAP Logon 里的显示名（实测 "DEMO PRD"），
     /// 不含 SID 与客户端，因此只能按显示名精确匹配，并用本次目标补全 info。
     /// </summary>
     private bool TryMatchDisplayName(string title, out LogonDialogInfo info)

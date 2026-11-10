@@ -224,6 +224,12 @@ public class AppSettings
     public string Theme { get; set; } = "Dark";
     public string Language { get; set; } = "zh-CN";
     public bool RememberMasterKey { get; set; }
+    /// <summary>
+    /// 凭据库是否启用了主密码保护。
+    /// true = 启用（打开需输入主密码）；false = 未启用（打开即用，仅受 Windows 账户与文件权限保护）；
+    /// null = 未知（老版本数据），启动时自动探测一次并写回。
+    /// </summary>
+    public bool? MasterPasswordRequired { get; set; }
     /// <summary>启用后用 Windows Hello（PIN/指纹/面容）验证代替手输主密码解锁。</summary>
     public bool UseWindowsHello { get; set; }
     /// <summary>闲置自动锁定（分钟），0 表示不锁定。默认 0：登录器常驻可用，无需反复解锁。</summary>

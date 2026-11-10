@@ -24,6 +24,8 @@ public partial class VaultDialog : Window
         _mode = mode;
         WindowTheme.Apply(this);
         ApplyMode();
+        ProtectCheck.Checked += OnProtectChanged;
+        ProtectCheck.Unchecked += OnProtectChanged;
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape) { DialogResult = false; Close(); }
@@ -70,6 +72,10 @@ public partial class VaultDialog : Window
                 RememberBox.IsChecked = true;
                 OkButton.Content = Localizer.Get("Btn.Save");
                 RecoverButton.Visibility = Visibility.Collapsed;
+                // 首次使用：主密码为可选项，默认不启用（打开即用）
+                ProtectPanel.Visibility = Visibility.Visible;
+                ProtectCheck.IsChecked = false;
+                ApplyProtectState();
                 break;
 
             case VaultMode.Change:
@@ -98,6 +104,22 @@ public partial class VaultDialog : Window
         }
     }
 
+    /// <summary>勾选状态决定是否启用主密码输入（未勾选 = 不设主密码，打开即用）。</summary>
+    private void ApplyProtectState()
+    {
+        var on = ProtectCheck.IsChecked == true;
+        PasswordPanel.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        ConfirmPanel.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        RememberBox.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnProtectChanged(object sender, RoutedEventArgs e)
+    {
+        if (_mode != VaultMode.Setup) return;
+        ApplyProtectState();
+        if (ProtectCheck.IsChecked == true) MainBox.FocusInput();
+    }
+
     private void OnOk(object sender, RoutedEventArgs e)
     {
         ErrorText.Visibility = Visibility.Collapsed;
@@ -113,6 +135,23 @@ public partial class VaultDialog : Window
 
         if (_mode == VaultMode.Unlock)
         {
+            // 凭据库未启用主密码：直接以空密码解锁
+            if (AppServices.Settings.MasterPasswordRequired == false)
+            {
+                if (!AppServices.Vault.Unlock("", out var errNone))
+                {
+                    ShowError(errNone);
+                    return;
+                }
+                _failedAttempts = 0;
+                AppServices.Settings.RememberMasterKey = false;
+                KeyProtection.Clear();
+                AppServices.Manifest.Save();
+                DialogResult = true;
+                Close();
+                return;
+            }
+
             if (string.IsNullOrEmpty(password)) { ShowError(Localizer.Get("Unlock.TooShort")); return; }
             if (AppServices.Vault.Unlock(password, out var error))
             {
@@ -139,6 +178,44 @@ public partial class VaultDialog : Window
             return;
         }
 
+        if (_mode == VaultMode.Setup)
+        {
+            // 主密码为可选项：未勾选「启用主密码保护」时以空密码创建凭据库，打开即用
+            var usePassword = ProtectCheck.IsChecked == true;
+
+            if (usePassword)
+            {
+                if (password.Length < 6)
+                {
+                    ShowError(Localizer.Get("Unlock.TooShort"));
+                    return;
+                }
+                if (ConfirmBox.Password != password)
+                {
+                    ShowError(Localizer.Get("Unlock.Mismatch"));
+                    return;
+                }
+            }
+
+            AppServices.Vault.Initialize(usePassword ? password : "");
+            AppServices.Settings.MasterPasswordRequired = usePassword;
+            AppServices.Settings.RememberMasterKey = usePassword && RememberBox.IsChecked == true;
+            if (AppServices.Settings.RememberMasterKey) KeyProtection.SavePassword(password);
+            else KeyProtection.Clear();
+            AppServices.Manifest.Save();
+            Log.Info(usePassword ? "已创建凭据库（启用主密码保护）" : "已创建凭据库（未启用主密码保护）");
+            DialogResult = true;
+            Close();
+            return;
+        }
+
+        // Change：设置/修改主密码（原库可能未启用主密码，此时「当前主密码」留空即可）
+        if (!AppServices.Vault.Verify(CurrentBox.Password))
+        {
+            ShowError(Localizer.Get("Unlock.Wrong"));
+            return;
+        }
+
         if (password.Length < 6)
         {
             ShowError(Localizer.Get("Unlock.TooShort"));
@@ -151,33 +228,16 @@ public partial class VaultDialog : Window
             return;
         }
 
-        if (_mode == VaultMode.Setup)
-        {
-            AppServices.Vault.Initialize(password);
-            AppServices.Settings.RememberMasterKey = RememberBox.IsChecked == true;
-            if (AppServices.Settings.RememberMasterKey) KeyProtection.SavePassword(password);
-            AppServices.Manifest.Save();
-            Log.Info("已创建凭据库");
-            DialogResult = true;
-            Close();
-            return;
-        }
-
-        // Change
-        if (!AppServices.Vault.Verify(CurrentBox.Password))
-        {
-            ShowError(Localizer.Get("Unlock.Wrong"));
-            return;
-        }
-
         if (!AppServices.Vault.ChangePassword(password, out var changeError))
         {
             ShowError(changeError);
             return;
         }
 
+        AppServices.Settings.MasterPasswordRequired = true;
         if (AppServices.Settings.RememberMasterKey) KeyProtection.SavePassword(password);
         else KeyProtection.Clear();
+        AppServices.Manifest.Save();
 
         Log.Info("主密码已更新");
         DialogResult = true;

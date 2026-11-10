@@ -57,7 +57,7 @@ public sealed class LaunchService
 
         // 登录弹框守护：SAP 7.40+ 已废弃 .sap 里的密码字段，走 .sap 必然弹登录框。
         // 这里在等待会话期间接管该弹框，回填密码并点登录（单次登录最多 1 次）。
-        // displayName 必须传入：.sap 启动的登录框标题是 SAP Logon 显示名（如 "DeRUCCI PRD"），
+        // displayName 必须传入：.sap 启动的登录框标题是 SAP Logon 显示名（如 "DEMO PRD"），
         // 不含 SID/客户端，guard 只能靠显示名匹配。遗漏此参数会导致 .sap 路径永远无法自动填密码。
         // 用命名参数显式写出，避免日后又漏掉这个可选参数。
         var guard = settings.AutoFillLogonDialog && !string.IsNullOrEmpty(credential?.Password)

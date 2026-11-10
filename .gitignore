@@ -43,3 +43,4 @@ release/
 build/out-*/
 docs/
 release-parts/
+build/verify-run/

@@ -46,6 +46,8 @@
                 <Border Background="{DynamicResource Brush.Surface}" CornerRadius="9" BorderBrush="{DynamicResource Brush.Border}"
                         BorderThickness="1" Padding="16,12">
                     <StackPanel>
+                        <TextBlock x:Name="MasterPwStatusText" Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap" LineHeight="18" Margin="0,0,0,6" />
                         <Grid Margin="0,4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />

@@ -19,12 +19,20 @@
                 <views:PasswordField x:Name="CurrentBox" />
             </StackPanel>
 
-            <TextBlock x:Name="MainLabel" Text="{DynamicResource Unlock.Password}" FontSize="12"
-                       Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,6" />
-            <views:PasswordField x:Name="MainBox" />
-            <Button x:Name="RecoverButton" Content="{DynamicResource Unlock.RecoverWindows}"
-                    Style="{StaticResource Btn.Link}" HorizontalAlignment="Left" Margin="0,8,0,0"
-                    Visibility="Collapsed" Click="OnRecoverWithWindows" />
+            <StackPanel x:Name="ProtectPanel" Visibility="Collapsed" Margin="0,0,0,4">
+                <CheckBox x:Name="ProtectCheck" Content="{DynamicResource Unlock.UsePassword}" Margin="0,4,0,0" />
+                <TextBlock Text="{DynamicResource Unlock.UsePasswordHint}" Style="{StaticResource Text.Caption}"
+                           TextWrapping="Wrap" LineHeight="18" Margin="24,4,0,0" />
+            </StackPanel>
+
+            <StackPanel x:Name="PasswordPanel">
+                <TextBlock x:Name="MainLabel" Text="{DynamicResource Unlock.Password}" FontSize="12"
+                           Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,6" />
+                <views:PasswordField x:Name="MainBox" />
+                <Button x:Name="RecoverButton" Content="{DynamicResource Unlock.RecoverWindows}"
+                        Style="{StaticResource Btn.Link}" HorizontalAlignment="Left" Margin="0,8,0,0"
+                        Visibility="Collapsed" Click="OnRecoverWithWindows" />
+            </StackPanel>
 
             <StackPanel x:Name="ConfirmPanel" Margin="0,12,0,0">
                 <TextBlock Text="{DynamicResource Unlock.Confirm}" FontSize="12" Foreground="{DynamicResource Brush.TextDim}" Margin="0,0,0,6" />

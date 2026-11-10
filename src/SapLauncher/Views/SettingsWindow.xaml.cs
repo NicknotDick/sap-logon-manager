@@ -50,7 +50,17 @@ public partial class SettingsWindow : Window
         var mode = Localizer.Get(AppPaths.IsPortable ? "Settings.ModePortable" : "Settings.ModeNormal");
         DataDirText.Text = Localizer.Get("Settings.DataDir") + ": " + AppPaths.Root + "\n" + mode;
 
+        UpdateMasterPwStatus();
+
         _loading = false;
+    }
+
+    /// <summary>显示主密码保护状态（已启用 / 未启用），并给出启用入口。</summary>
+    private void UpdateMasterPwStatus()
+    {
+        MasterPwStatusText.Text = AppServices.Settings.MasterPasswordRequired == false
+            ? Localizer.Get("Settings.MasterPwOff")
+            : Localizer.Get("Settings.MasterPwOn");
     }
 
     /// <summary>刷新 GUI 检测状态文本：显示版本/目录，失败时列出尝试过的路径。</summary>
@@ -179,13 +189,19 @@ public partial class SettingsWindow : Window
         if (!EnsureUnlocked()) return;
         var dlg = new VaultDialog(VaultMode.Change) { Owner = this };
         if (dlg.ShowDialog() == true)
+        {
+            UpdateMasterPwStatus();
             MessageBox.Show(this, Localizer.Get("Settings.PwdChanged"), Localizer.Get("App.Title"),
                 MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 
     private bool EnsureUnlocked()
     {
         if (AppServices.Vault.IsUnlocked) return true;
+        // 未启用主密码保护：无需解锁
+        if (AppServices.Settings.MasterPasswordRequired == false && AppServices.Vault.Unlock("", out _))
+            return true;
         var dlg = new VaultDialog(VaultMode.Unlock) { Owner = this };
         return dlg.ShowDialog() == true;
     }

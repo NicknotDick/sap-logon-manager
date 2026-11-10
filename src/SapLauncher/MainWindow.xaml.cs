@@ -34,8 +34,23 @@ public partial class MainWindow : Window
     private LandscapeWatcher? _watcher;
     private LockService? _locker;
     private DispatcherTimer? _toastTimer;
+    private DispatcherTimer? _activityTimer;
     private bool _syncing;
     private bool _forceClose;
+
+    // ---- 前台/活动时的连通状态即时刷新 ----
+    /// <summary>用户最后一次操作的时间（UTC）。</summary>
+    private DateTime _lastUserActivity = DateTime.MinValue;
+    /// <summary>上一次连通性探测的开始时间（UTC）。</summary>
+    private DateTime _lastProbeAt = DateTime.MinValue;
+    /// <summary>是否有探测正在执行，防止并发叠加。</summary>
+    private bool _probing;
+    /// <summary>活动判定的静默窗口：此时间内有操作即视为“活动中”。</summary>
+    private const int ActivityWindowMs = 3000;
+    /// <summary>活动触发的最小探测间隔（毫秒），避免频繁打网络。</summary>
+    private const int MinActivityProbeIntervalMs = 30000;
+    /// <summary>窗口重新激活触发的最小探测间隔（毫秒）。</summary>
+    private const int MinActivateProbeIntervalMs = 10000;
 
     // 长按拖拽排序
     private readonly Dictionary<RadioButton, GroupDef> _groupOfRb = new();
@@ -73,6 +88,72 @@ public partial class MainWindow : Window
         ApplyFilter();
         RefreshDefaultUsers();
         UpdateLockState();
+
+        InitActivityRefresh();
+    }
+
+    /// <summary>
+    /// 启动「前台/活动 → 连通状态即时刷新」：
+    ///  · 窗口被激活（从托盘恢复、切回本程序）→ 立刻探测一次
+    ///  · 用户在窗口内有操作（鼠标/键盘）→ 满足最小间隔后立刻探测
+    /// 两者都受节流约束，避免频繁对 SAP 服务器发起 TCP 连接。
+    /// </summary>
+    private void InitActivityRefresh()
+    {
+        Activated += OnWindowActivated;
+        PreviewMouseMove += OnUserActivity;
+        PreviewMouseDown += OnUserActivity;
+        PreviewKeyDown += OnUserActivity;
+        PreviewMouseWheel += OnUserActivity;
+
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        timer.Tick += OnActivityTick;
+        timer.Start();
+        _activityTimer = timer;
+    }
+
+    /// <summary>记录用户操作时间（不做探测，探测统一由定时器判定）。</summary>
+    private void OnUserActivity(object sender, MouseEventArgs e) => MarkActivity();
+
+    private void OnUserActivity(object sender, MouseButtonEventArgs e) => MarkActivity();
+
+    private void OnUserActivity(object sender, KeyEventArgs e) => MarkActivity();
+
+    private void OnUserActivity(object sender, MouseWheelEventArgs e) => MarkActivity();
+
+    private void MarkActivity() => _lastUserActivity = DateTime.UtcNow;
+
+    /// <summary>窗口重新获得焦点：立刻刷新一次连通状态。</summary>
+    private void OnWindowActivated(object? sender, EventArgs e)
+    {
+        if (_probing) return;
+        var now = DateTime.UtcNow;
+        if (now - _lastProbeAt < TimeSpan.FromMilliseconds(MinActivateProbeIntervalMs)) return;
+        _ = ProbeAllAsync(true);
+    }
+
+    /// <summary>活动检测：处于前台且刚有操作、且距上次探测已过最小间隔时立刻刷新。</summary>
+    private void OnActivityTick(object? sender, EventArgs e)
+    {
+        if (!ShouldProbeForActivity(IsVisible, _probing, DateTime.UtcNow,
+                _lastUserActivity, _lastProbeAt, ActivityWindowMs, MinActivityProbeIntervalMs))
+            return;
+
+        _ = ProbeAllAsync();
+    }
+
+    /// <summary>
+    /// 活动触发的判定规则（抽为纯函数以便自检）：
+    /// 窗口可见 + 无探测在跑 + 最近有操作 + 距上次探测已过最小间隔。
+    /// </summary>
+    internal static bool ShouldProbeForActivity(bool isVisible, bool probing, DateTime now,
+        DateTime lastUserActivity, DateTime lastProbeAt, int activityWindowMs, int minIntervalMs)
+    {
+        if (!isVisible) return false;      // 隐藏（最小化到托盘）时不刷新
+        if (probing) return false;         // 已有探测在执行，避免并发叠加
+        if (now - lastUserActivity > TimeSpan.FromMilliseconds(activityWindowMs)) return false;
+        if (now - lastProbeAt < TimeSpan.FromMilliseconds(minIntervalMs)) return false;
+        return true;
     }
 
     // ==================== 生命周期 ====================
@@ -123,7 +204,7 @@ public partial class MainWindow : Window
 
         RefreshDefaultUsers();
         await SyncAsync(false);
-        _ = ProbeAllAsync();
+        _ = ProbeAllAsync(true);
     }
 
     private void OnClosing(object? sender, CancelEventArgs e)
@@ -147,6 +228,7 @@ public partial class MainWindow : Window
 
     private void Cleanup()
     {
+        try { _activityTimer?.Stop(); } catch { }
         try { _hotkey?.Dispose(); } catch { }
         try { _watcher?.Dispose(); } catch { }
         try { _locker?.Dispose(); } catch { }
@@ -530,7 +612,7 @@ public partial class MainWindow : Window
             // SAP GUI 启动会话时会回写配置，导致监听频繁触发；无变化时不刷日志
             if (changed) Log.Info("同步完成：" + result.Summary);
             if (manual) ShowToast(result.Summary);
-            _ = ProbeAllAsync();
+            _ = ProbeAllAsync(true);
         }
         catch (Exception ex)
         {
@@ -545,20 +627,34 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task ProbeAllAsync()
+    /// <summary>
+    /// 探测全部系统的连通状态。
+    /// force=true 时忽略「已有探测在执行」的判断（同步后、启动时用）；
+    /// 否则若已有探测在跑则直接返回，避免并发叠加与状态抖动。
+    /// </summary>
+    private async Task ProbeAllAsync(bool force = false)
     {
+        if (!force && _probing) return;
+
         try { _probeCts?.Cancel(); } catch { }
         _probeCts = new CancellationTokenSource();
         var token = _probeCts.Token;
+        _probing = true;
+        _lastProbeAt = DateTime.UtcNow;
         try
         {
             var targets = AppServices.Manifest.Data.Systems.Where(s => !s.IsStale).ToList();
             await ConnectivityProbe.ProbeAllAsync(targets, token);
+            Log.Debug($"连通状态已刷新：{targets.Count} 个连接（耗时 {(DateTime.UtcNow - _lastProbeAt).TotalMilliseconds:F0} ms）");
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             Log.Warn("连通性探测异常：" + ex.Message);
+        }
+        finally
+        {
+            _probing = false;
         }
     }
 
@@ -597,6 +693,16 @@ public partial class MainWindow : Window
     private bool EnsureUnlocked()
     {
         if (AppServices.Vault.IsUnlocked) return true;
+
+        // 以凭据库实际能否用空密码打开为准：未启用主密码保护时直接解锁
+        if (AppServices.Vault.Unlock("", out _))
+        {
+            AppServices.Settings.MasterPasswordRequired = false;
+            UpdateLockState();
+            return true;
+        }
+        AppServices.Settings.MasterPasswordRequired = true;
+
         var dlg = new VaultDialog(VaultMode.Unlock) { Owner = this };
         var ok = dlg.ShowDialog() == true;
         UpdateLockState();
@@ -1118,7 +1224,7 @@ public partial class MainWindow : Window
         RefreshGuiText();
         UpdateLockState();
         UpdateSelectionUi();
-        _ = ProbeAllAsync();
+        _ = ProbeAllAsync(true);
     }
 
     private void OnAboutClick(object sender, RoutedEventArgs e)

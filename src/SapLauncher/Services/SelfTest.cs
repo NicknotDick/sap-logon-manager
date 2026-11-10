@@ -215,7 +215,7 @@ public static class SelfTest
                 Port = 3200,
                 Router = "/H/203.0.113.10"
             };
-            var lb = new SapSystem { Kind = ConnKind.LoadBalanced, MessageServer = "s4prdascs.derucci.com" };
+            var lb = new SapSystem { Kind = ConnKind.LoadBalanced, MessageServer = "s4prdascs.example.com" };
 
             var a = ShortcutFileBuilder.BuildConnectionString(direct);
             var b = ShortcutFileBuilder.BuildConnectionString(router);
@@ -226,7 +226,54 @@ public static class SelfTest
 
             if (a != "/H/10.1.1.1/S/3200") throw new InvalidOperationException("直连串错误");
             if (b != "/H/203.0.113.10/S/3299/H/192.0.2.20/S/3200") throw new InvalidOperationException("Router 串错误");
-            if (!c.StartsWith("/M/s4prdascs.derucci.com/S/3600/G/", StringComparison.Ordinal)) throw new InvalidOperationException("负载均衡串错误");
+            if (!c.StartsWith("/M/s4prdascs.example.com/S/3600/G/", StringComparison.Ordinal)) throw new InvalidOperationException("负载均衡串错误");
+        });
+
+        // 6d. 前台/活动刷新规则：可见 + 无探测在跑 + 最近有操作 + 已过最小间隔
+        Check("连通状态刷新规则（前台/活动）", () =>
+        {
+            var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+            var lastActivity = now.AddSeconds(-2);      // 2 秒前有操作
+            var lastProbe = now.AddSeconds(-40);        // 40 秒前探测过
+
+            if (!MainWindow.ShouldProbeForActivity(true, false, now, lastActivity, lastProbe, 3000, 30000))
+                throw new InvalidOperationException("满足条件时未判定为需要刷新");
+            if (MainWindow.ShouldProbeForActivity(false, false, now, lastActivity, lastProbe, 3000, 30000))
+                throw new InvalidOperationException("窗口不可见时不应刷新");
+            if (MainWindow.ShouldProbeForActivity(true, true, now, lastActivity, lastProbe, 3000, 30000))
+                throw new InvalidOperationException("已有探测在跑时不应刷新");
+            if (MainWindow.ShouldProbeForActivity(true, false, now, now.AddSeconds(-10), lastProbe, 3000, 30000))
+                throw new InvalidOperationException("长时间无操作时不应刷新");
+            if (MainWindow.ShouldProbeForActivity(true, false, now, lastActivity, now.AddSeconds(-5), 3000, 30000))
+                throw new InvalidOperationException("未到最小间隔时不应刷新");
+
+            sb.AppendLine("      活动窗口 3s / 最小间隔 30s，规则校验通过");
+        });
+
+        // 6c. 连通性探测：端点解析 + 被取消时状态复位（否则圆点永久停在「检测中」）
+        Check("连通性探测：端点解析与取消后状态复位", () =>
+        {
+            var direct = new SapSystem { Kind = ConnKind.Direct, Host = "192.0.2.10", Port = 3200 };
+            var router = new SapSystem { Kind = ConnKind.Router, Host = "192.0.2.20", Port = 3200, Router = "/H/203.0.113.10" };
+            var lb = new SapSystem { Kind = ConnKind.LoadBalanced, MessageServer = "s4prdascs.example.com" };
+
+            var e1 = ConnectivityProbe.ResolveEndpoint(direct);
+            var e2 = ConnectivityProbe.ResolveEndpoint(router);
+            var e3 = ConnectivityProbe.ResolveEndpoint(lb);
+            sb.AppendLine($"      直连={e1.host}:{e1.port} Router={e2.host}:{e2.port} 负载均衡={e3.host}:{e3.port}");
+            if (e1.host != "192.0.2.10" || e1.port != 3200) throw new InvalidOperationException("直连端点解析错误");
+            if (e2.host != "203.0.113.10" || e2.port != 3299) throw new InvalidOperationException("Router 端点解析错误");
+            if (e3.host != "s4prdascs.example.com" || e3.port != 3600) throw new InvalidOperationException("负载均衡端点解析错误");
+
+            // 取消后不得停在 Probing
+            var target = new SapSystem { Uuid = "probe-x", Name = "探测取消用例", Host = "192.0.2.99", Port = 3200 };
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            // Check 只接受同步委托，必须同步等待，否则异常会被 async void 吞掉
+            ConnectivityProbe.ProbeAllAsync(new[] { target }, cts.Token).GetAwaiter().GetResult();
+            if (target.Probe == ProbeState.Probing)
+                throw new InvalidOperationException("探测被取消后状态仍停在 Probing");
+            sb.AppendLine($"      取消后状态={target.Probe}");
         });
 
         // 6b. 命令行定位参数：唯一 SID 必须用 -system，且绝不带 -guiparm / -sysname
@@ -235,10 +282,10 @@ public static class SelfTest
             var sys = new SapSystem
             {
                 Uuid = "u2",
-                Name = "DeRUCCI PRD",
+                Name = "DEMO PRD",
                 Sid = "PRD",
                 Kind = ConnKind.LoadBalanced,
-                MessageServer = "s4prdascs.derucci.com"
+                MessageServer = "s4prdascs.example.com"
             };
             var cred = new Credential { User = "200002", Password = "pw", Tcode = "SE16N" };
 
@@ -287,7 +334,7 @@ public static class SelfTest
             // 勾选「登录后直达」+ 填了事务码 → 命令行必须带 -command / -type=Transaction
             var sysT = new SapSystem
             {
-                Uuid = "u3", Name = "DeRUCCI PRD", Sid = "PRD",
+                Uuid = "u3", Name = "DEMO PRD", Sid = "PRD",
                 Kind = ConnKind.LoadBalanced, DirectTcode = true
             };
             var credT = new Credential { User = "200002", Password = "pw", Tcode = "SE16N" };
@@ -366,6 +413,51 @@ public static class SelfTest
                     throw new InvalidOperationException("错误密码竟然解锁成功");
 
                 sb.AppendLine("      写入→锁定→解锁→校验 通过，错误密码被拒绝");
+            }
+            finally
+            {
+                AppPaths.OverrideRoot(original);
+                try { Directory.Delete(sandbox, true); } catch { }
+            }
+        });
+
+        // 8b. 无主密码的凭据库：空密码可打开，空密码库不可被非空密码打开
+        Check("凭据库：主密码可选（空密码库往返）", () =>
+        {
+            var original = AppPaths.Root;
+            var sandbox = Path.Combine(original, "selftest-vault-nopw");
+            try
+            {
+                AppPaths.OverrideRoot(sandbox);
+                Directory.CreateDirectory(sandbox);
+
+                var vault = new VaultService();
+                vault.Initialize("");                       // 未启用主密码保护
+                vault.Upsert(new Credential
+                {
+                    SystemUuid = "uuid-nopw",
+                    Client = "300",
+                    User = "TESTUSER",
+                    Password = "P@ss",
+                    Remember = true
+                });
+                vault.Lock();
+
+                var reopened = new VaultService();
+                if (!reopened.Unlock("", out var errNone))
+                    throw new InvalidOperationException("空密码解锁失败：" + errNone);
+                var item = reopened.Get("uuid-nopw", "300");
+                if (item is null || item.Password != "P@ss")
+                    throw new InvalidOperationException("空密码库的凭据内容不一致");
+                if (!reopened.Verify(""))
+                    throw new InvalidOperationException("空密码校验失败");
+
+                // 反向：空密码库不应被任意非空密码打开
+                var wrong = new VaultService();
+                if (wrong.Unlock("some-password", out _))
+                    throw new InvalidOperationException("空密码库被非空密码解锁");
+
+                sb.AppendLine("      空密码库：空密码可解锁、凭据一致、其它密码被拒绝");
             }
             finally
             {
@@ -492,7 +584,7 @@ public static class SelfTest
             }
 
             // 登录框识别（类 #32770，标题即系统名）
-            sb.AppendLine("      \u767b\u5f55\u6846\u68c0\u6d4b\u51fd\u6570\u53ef\u7528\uff0c\u5f53\u524d\u53ef\u89c1=" + NativeMethods.IsSapLogonDialogVisible("DeRUCCI PRD"));
+            sb.AppendLine("      \u767b\u5f55\u6846\u68c0\u6d4b\u51fd\u6570\u53ef\u7528\uff0c\u5f53\u524d\u53ef\u89c1=" + NativeMethods.IsSapLogonDialogVisible("DEMO PRD"));
         });
 
         // 9. 会话窗口标题与 SID 匹配（登录成功判定依赖此逻辑）
@@ -660,26 +752,26 @@ public static class SelfTest
             if (LogonDialogGuard.TryParseLogonTitle("SAP Easy Access", out _))
                 throw new InvalidOperationException("无括号标题不应被接受");
 
-            // 格式②：.sap 启动，标题即显示名（实测 "DeRUCCI PRD"）
-            var guard = new LogonDialogGuard("PRD", "800", "200002", "secret", new[] { "C:////SAP" }, "DeRUCCI PRD");
-            var info = guard.MatchTitle("DeRUCCI PRD");
+            // 格式②：.sap 启动，标题即显示名（实测 "DEMO PRD"）
+            var guard = new LogonDialogGuard("PRD", "800", "200002", "secret", new[] { "C:////SAP" }, "DEMO PRD");
+            var info = guard.MatchTitle("DEMO PRD");
             if (info is null) throw new InvalidOperationException("格式②（显示名）未被识别");
             if (info.Value.Sid != "PRD" || info.Value.Client != "800")
                 throw new InvalidOperationException("格式② 补全的 SID/客户端不正确");
 
             // 大小写与首尾空格应容忍
-            if (guard.MatchTitle("  derucci prd ") is null)
+            if (guard.MatchTitle("  demo prd ") is null)
                 throw new InvalidOperationException("显示名匹配应忽略大小写与首尾空格");
 
             // 别的系统的显示名不应命中
             var other = new LogonDialogGuard("QAS", "300", "u", "p", new[] { "C:////SAP" }, "DEMO_QAS");
-            if (other.MatchTitle("DeRUCCI PRD") is not null)
+            if (other.MatchTitle("DEMO PRD") is not null)
                 throw new InvalidOperationException("不同系统的显示名被误匹配");
 
             // 回归：未传入 displayName 时，纯显示名标题（.sap 路径）必须匹配失败。
             // 这正是 v9 发布后「仍弹密码框」的根因——LaunchAsync 构造 guard 漏传了 displayName。
             var noName = new LogonDialogGuard("PRD", "800", "200002", "secret", new[] { "C:////SAP" });
-            if (noName.MatchTitle("DeRUCCI PRD") is not null)
+            if (noName.MatchTitle("DEMO PRD") is not null)
                 throw new InvalidOperationException("未传 displayName 时不应匹配显示名标题（会导致 .sap 路径无法自动填密码）");
 
             // 目标一致性：SID 与客户端不符必须拒绝
@@ -714,7 +806,7 @@ public static class SelfTest
             }
 
             var before = sessions.Select(w => w.handle).ToHashSet();
-            var system = new SapSystem { Name = "DeRUCCI PRD", Sid = "PRD" };
+            var system = new SapSystem { Name = "DEMO PRD", Sid = "PRD" };
 
             // 场景：会话已存在，启动器进程已退出交接，且不会开出新窗口
             var launcher = Process.Start("cmd.exe", "/c exit");

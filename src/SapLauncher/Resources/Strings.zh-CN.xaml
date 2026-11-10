@@ -75,11 +75,11 @@
     <sys:String x:Key="Batch.None">请先在列表中勾选需要批量登录的系统</sys:String>
 
     <sys:String x:Key="Unlock.Title">解锁凭据库</sys:String>
-    <sys:String x:Key="Unlock.SetupTitle">设置主密码</sys:String>
+        <sys:String x:Key="Unlock.SetupTitle">主密码（可选）</sys:String>
     <sys:String x:Key="Unlock.Password">主密码</sys:String>
     <sys:String x:Key="Unlock.Confirm">确认主密码</sys:String>
     <sys:String x:Key="Unlock.Remember">记住主密码（本机自动解锁，换电脑需重新输入）</sys:String>
-    <sys:String x:Key="Unlock.Hint">主密码仅用于本机 AES-256 加密，不会上传。遗忘后凭据无法恢复。</sys:String>
+        <sys:String x:Key="Unlock.Hint">主密码仅用于本机 AES-256 加密，不会上传。启用后遗忘主密码将无法恢复凭据；不启用则打开即用。</sys:String>
     <sys:String x:Key="Unlock.Wrong">主密码错误，或凭据库已损坏</sys:String>
     <sys:String x:Key="Unlock.Mismatch">两次输入的主密码不一致</sys:String>
     <sys:String x:Key="Unlock.TooShort">主密码至少 6 位</sys:String>
@@ -251,4 +251,8 @@
     <sys:String x:Key="Settings.GuiMissing">未检测到 SAP GUI：请先安装 SAP GUI for Windows，或在下方指定安装目录。</sys:String>
     <sys:String x:Key="Settings.GuiTried">已尝试路径</sys:String>
     <sys:String x:Key="Btn.AllFiles">所有文件</sys:String>
+    <sys:String x:Key="Unlock.UsePassword">启用主密码保护</sys:String>
+    <sys:String x:Key="Unlock.UsePasswordHint">不勾选则直接进入：凭据仍加密保存在本机，但仅受 Windows 账户与文件权限保护。可随时在「设置」中启用主密码。</sys:String>
+    <sys:String x:Key="Settings.MasterPwOn">主密码保护：已启用。每次打开需输入主密码；修改主密码请点下方「修改主密码」。</sys:String>
+    <sys:String x:Key="Settings.MasterPwOff">主密码保护：未启用。打开即用，凭据仅受本机 Windows 账户与文件权限保护。需要时点下方「修改主密码」启用。</sys:String>
 </ResourceDictionary>
