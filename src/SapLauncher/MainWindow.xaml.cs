@@ -38,6 +38,11 @@ public partial class MainWindow : Window
     private bool _syncing;
     private bool _forceClose;
 
+    /// <summary>当前已打开的快速搜索窗口，避免热键连发叠加多个模态窗口。</summary>
+    private QuickSearchWindow? _quickSearch;
+    /// <summary>主窗口 Closing 事件处理期间为 true，期间不得 Show/Activate。</summary>
+    private bool _closingNow;
+
     // ---- 前台/活动时的连通状态即时刷新 ----
     /// <summary>用户最后一次操作的时间（UTC）。</summary>
     private DateTime _lastUserActivity = DateTime.MinValue;
@@ -209,14 +214,24 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, CancelEventArgs e)
     {
-        if (!_forceClose && AppServices.Settings.MinimizeToTray)
+        // Close() 处理期间 WPF 禁止对窗口调用 Show/Close/EnsureHandle；
+        // 此时若收到热键或单实例「show」命令，由 RestoreFromTray 延后执行。
+        _closingNow = true;
+        try
         {
-            e.Cancel = true;
-            Hide();
-            _tray?.ShowBalloon(Localizer.Get("App.Title"), "已最小化到托盘，按 " + AppServices.Settings.Hotkey + " 快速搜索");
-            return;
+            if (!_forceClose && AppServices.Settings.MinimizeToTray)
+            {
+                e.Cancel = true;
+                Hide();
+                _tray?.ShowBalloon(Localizer.Get("App.Title"), "已最小化到托盘，按 " + AppServices.Settings.Hotkey + " 快速搜索");
+                return;
+            }
+            Cleanup();
         }
-        Cleanup();
+        finally
+        {
+            _closingNow = false;
+        }
     }
 
     private void ExitApp()
@@ -240,6 +255,11 @@ public partial class MainWindow : Window
 
     public void RestoreFromTray()
     {
+        if (_closingNow)
+        {
+            Dispatcher.BeginInvoke(new Action(RestoreFromTray), DispatcherPriority.Background);
+            return;
+        }
         ShowInTaskbar = true;
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
@@ -1234,6 +1254,29 @@ public partial class MainWindow : Window
 
     public void ShowQuickSearch()
     {
+        // WM_HOTKEY 钩子与命名管道命令都在窗口过程内同步派发；
+        // 排队到下一轮 Dispatcher，避免在消息处理中进入嵌套 ShowDialog。
+        Dispatcher.BeginInvoke(new Action(ShowQuickSearchCore), DispatcherPriority.Normal);
+    }
+
+    private void ShowQuickSearchCore()
+    {
+        // 热键连发 / 托盘重复点击时只激活已有窗口，不叠加第二个模态循环
+        var existing = _quickSearch;
+        if (existing is not null)
+        {
+            try
+            {
+                if (existing.IsLoaded)
+                {
+                    existing.Activate();
+                    return;
+                }
+            }
+            catch { /* 窗口已释放，按未打开处理 */ }
+            _quickSearch = null;
+        }
+
         if (!AppServices.Vault.IsUnlocked && VaultExists())
         {
             RestoreFromTray();
@@ -1242,7 +1285,24 @@ public partial class MainWindow : Window
 
         var systems = AppServices.Manifest.Data.Systems.Where(s => !s.IsStale).ToList();
         var win = new QuickSearchWindow(systems, async s => await LoginAsync(s));
-        win.ShowDialog();
+        _quickSearch = win;
+        win.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_quickSearch, win)) _quickSearch = null;
+        };
+        try
+        {
+            win.ShowDialog();
+        }
+        catch (InvalidOperationException ex)
+        {
+            // 窗口生命周期冲突时不再让异常冒泡到全局弹框
+            Log.Warn("快速搜索窗口显示失败：" + ex.Message);
+        }
+        finally
+        {
+            if (ReferenceEquals(_quickSearch, win)) _quickSearch = null;
+        }
     }
 
     private static bool VaultExists() => AppServices.Vault.Exists;

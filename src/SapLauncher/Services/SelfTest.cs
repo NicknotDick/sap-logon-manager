@@ -864,6 +864,27 @@ public static class SelfTest
         if (main is not null) Check("设置对话框", () => { _ = new Views.SettingsWindow(main!); });
         Check("批量登录窗口", () => { _ = new Views.BatchWindow(new List<SapSystem>()); });
         Check("快速搜索窗口", () => { _ = new Views.QuickSearchWindow(new List<SapSystem>(), _ => Task.CompletedTask); });
+        // 回归：Window.Close() 期间 Deactivated 处理器曾再次调用 Close()，
+        // 触发「Cannot set Visibility ... while a Window is closing」。统一关闭入口必须可重入。
+        Check("快速搜索窗口关闭防重入", () =>
+        {
+            var win = new Views.QuickSearchWindow(new List<SapSystem>(), _ => Task.CompletedTask);
+            win.Show();
+            try
+            {
+                var method = typeof(Views.QuickSearchWindow).GetMethod("RequestClose",
+                    System.Reflection.BindingFlags.Instance |
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.NonPublic);
+                if (method is null) throw new InvalidOperationException("缺少统一关闭入口 RequestClose");
+                method.Invoke(win, null);   // 第一次：正常关闭
+                method.Invoke(win, null);   // 第二次：必须静默返回
+            }
+            finally
+            {
+                try { win.Close(); } catch { /* 已关闭 */ }
+            }
+        });
         Check("脚本管理窗口", () => { _ = new Views.ScriptsWindow(null); });
         Check("导入窗口", () => { _ = new Views.ImportWindow(); });
         Check("关于窗口", () => { _ = new Views.AboutWindow(); });

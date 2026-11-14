@@ -304,9 +304,18 @@ public partial class App : Application
 
     private void OnUnhandled(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        // 日志含完整堆栈：WPF「while a Window is closing」一类异常仅靠消息无法定位调用点
         Log.Error("界面未处理异常", e.Exception);
-        MessageBox.Show("发生未处理的错误：" + e.Exception.Message + "\n\n详细信息已写入日志。",
-            "SAP 登录管理器", MessageBoxButton.OK, MessageBoxImage.Error);
+        try
+        {
+            MessageBox.Show("发生未处理的错误：" + e.Exception.Message + "\n\n详细信息已写入日志。",
+                "SAP 登录管理器", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        catch (Exception ex)
+        {
+            // 异常发生在窗口 closing 期间时，弹框本身也可能失败；不能再让它冒泡成二次崩溃
+            Log.Warn("错误提示框显示失败：" + ex.Message);
+        }
         e.Handled = true;
     }
 

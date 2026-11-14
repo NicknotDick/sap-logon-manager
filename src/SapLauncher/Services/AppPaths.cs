@@ -86,8 +86,10 @@ public static class Log
     public static void Warn(string message) => Write("WARN", message);
     /// <summary>调试级记录（如高频的连通状态刷新），便于排查运行时行为。</summary>
     public static void Debug(string message) => Write("DEBUG", message);
+    /// <summary>错误日志附带完整堆栈，便于定位 WPF 窗口生命周期类异常。</summary>
     public static void Error(string message, Exception? ex = null)
-        => Write("ERROR", ex is null ? message : $"{message} :: {ex.GetType().Name}: {ex.Message}");
+        => Write("ERROR", ex is null ? message
+            : $"{message} :: {ex.GetType().Name}: {ex.Message}{Environment.NewLine}{ex}");
 
     private static void Write(string level, string message)
     {
