@@ -18,7 +18,14 @@ public partial class AboutWindow : Window
 
         VersionText.Text = $"{Localizer.Get("About.Version")} {BuildVersion()}  ·  {AppServices.Gui.Version}";
         var mode = Localizer.Get(AppPaths.IsPortable ? "Settings.ModePortable" : "Settings.ModeNormal");
-        PathText.Text = Localizer.Get("Settings.DataDir") + ": " + AppPaths.Root + "  ·  " + mode;
+
+        // 数据目录：路径做成可点击链接，点击在资源管理器中打开对应位置
+        PathText.Inlines.Clear();
+        PathText.Inlines.Add(new Run(Localizer.Get("Settings.DataDir") + ":  "));
+        var dirLink = new Hyperlink(new Run(AppPaths.Root));
+        dirLink.Click += OnOpenDataDir;
+        PathText.Inlines.Add(dirLink);
+        PathText.Inlines.Add(new Run("  ·  " + mode));
 
         // GitHub 项目链接（点击用浏览器打开）
         var link = new Hyperlink(new Run("github.com/NicknotDick/sap-logon-manager")) { NavigateUri = ProjectUri };
@@ -36,6 +43,20 @@ public partial class AboutWindow : Window
         catch (Exception ex)
         {
             Log.Warn("打开 GitHub 链接失败：" + ex.Message);
+        }
+    }
+
+    /// <summary>点击「关于」中的数据目录链接：在资源管理器中打开数据目录。</summary>
+    private void OnOpenDataDir(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            AppPaths.EnsureAll();
+            Process.Start(new ProcessStartInfo("explorer.exe", AppPaths.Root) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("打开数据目录失败：" + ex.Message);
         }
     }
 

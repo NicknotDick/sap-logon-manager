@@ -500,6 +500,18 @@
         </Setter>
     </Style>
 
+    <!-- ============ 链接 ============ -->
+    <Style TargetType="Hyperlink">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+        <Setter Property="TextDecorations" Value="Underline" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.AccentHover}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- ============ 提示 ============ -->
     <Style TargetType="ToolTip">
         <Setter Property="Foreground" Value="{DynamicResource Brush.Text}" />
