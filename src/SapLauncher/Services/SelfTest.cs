@@ -895,6 +895,20 @@ public static class SelfTest
                 if (!AccountService.LoginLanguages.SequenceEqual(new[] { "ZH", "EN" }))
                     throw new InvalidOperationException("语言二级菜单应为 ZH / EN");
 
+                // 删除账号：同名组保留带姓名的条目，并把被删条目的密码/语言/Tcode 合并进去
+                var delNoName = new Credential { SystemUuid = "u", Client = "800", User = "225048040",
+                                                  Password = "pw-a", Language = "EN", Tcode = "SU01" };
+                var delNamed = new Credential { SystemUuid = "u", Client = "800", User = "225048040",
+                                                 DisplayName = "Selena", Password = "", Language = "ZH" };
+                var delKeeper = AccountService.PickDeletionKeeper(new[] { delNamed });
+                if (delKeeper is null || !ReferenceEquals(delKeeper, delNamed))
+                    throw new InvalidOperationException("删除时应保留带姓名的那条");
+                AccountService.MergeInto(delKeeper, delNoName);
+                if (delKeeper.Password != "pw-a" || delKeeper.Language != "ZH" || delKeeper.Tcode != "SU01" || delKeeper.DisplayName != "Selena")
+                    throw new InvalidOperationException("删除合并应补齐空字段(密码/Tcode)、保留已有语言与姓名");
+                if (AccountService.PickDeletionKeeper(new[] { delNoName }) is not null)
+                    throw new InvalidOperationException("同名组都不带姓名时应整体删除（keeper 为 null）");
+
                 // 默认登录项（带 Enter）与平铺项去重：同系统+同客户端+同账号视为同一条
                 var defItem = new Credential { SystemUuid = "u", Client = "800", User = "SYSD", DisplayName = "Nick", Language = "ZH", IsDefault = true };
                 if (!AccountService.IsSameAccount(defItem, new Credential { SystemUuid = "u", Client = "800", User = "sysd" }))

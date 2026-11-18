@@ -979,9 +979,14 @@ public partial class MainWindow : Window
         BuildAccountMenuItems(Current);
     }
 
+    /// <summary>默认登录项当前指向的凭据，供其预览鼠标登录与语言子菜单读取。</summary>
+    private Credential? _menuDefaultAccount;
+    private bool _defaultMenuHooked;
+
     /// <summary>
     /// 在「登录」项后插入账号菜单。每个凭据平铺为一项，显示「客户端 · 账号（姓名）」（不含语言）；
-    /// 鼠标悬停展开二级菜单选择登录语言（ZH / EN），选后用该条完整凭据 + 所选语言登录。
+    /// 鼠标悬停展开二级菜单选择登录语言（ZH / EN），选后用该条完整凭据 + 所选语言登录；
+    /// 直接点账号项主体（非右侧箭头区）则按该账号配置的语言登录。
     /// </summary>
     private void BuildAccountMenuItems(SapSystem? system)
     {
@@ -990,21 +995,30 @@ public partial class MainWindow : Window
 
         foreach (var item in _accountMenuItems) menu.Items.Remove(item);
         _accountMenuItems.Clear();
+        MenuLogin.Items.Clear();
 
-        if (system is null || !AppServices.Vault.IsUnlocked) return;
+        if (system is null || !AppServices.Vault.IsUnlocked)
+        {
+            MenuLogin.Header = Localizer.Get("Ctx.Login");
+            _menuDefaultAccount = null;
+            return;
+        }
 
         var groups = AccountService.GroupByClient(AppServices.Vault.Items, system.Uuid);
         var all = groups.SelectMany(g => g.Accounts).ToList();
         if (all.Count == 0)
         {
             MenuLogin.Header = Localizer.Get("Ctx.Login");
+            _menuDefaultAccount = null;
             return;
         }
 
         // 默认登录项（带 Enter）取「最近使用客户端的默认账号」，双击/Enter 行为不变：
-        // 仍按该账号保存的语言登录，只是文字不再显示语言。
+        // 仍按该账号保存的语言登录，只是文字不再显示语言；同样支持悬停选语言。
         var def = AppServices.Vault.GetAny(system.Uuid) ?? all[0];
         MenuLogin.Header = AccountService.FormatEntryLineNoLang(def);
+        _menuDefaultAccount = def;
+        AttachLanguageMenu(MenuLogin, system, () => _menuDefaultAccount, ref _defaultMenuHooked);
 
         var insertAt = menu.Items.IndexOf(MenuLogin) + 1;
 
@@ -1017,16 +1031,47 @@ public partial class MainWindow : Window
                 if (AccountService.IsSameAccount(account, def)) continue;
                 var item = new MenuItem { Header = AccountService.FormatEntryLineNoLang(account) };
                 var captured = account;
-                foreach (var lang in AccountService.LoginLanguages)
-                {
-                    var langItem = new MenuItem { Header = lang };
-                    langItem.Click += async (_, _) => await LoginAsync(system, captured, languageOverride: lang);
-                    item.Items.Add(langItem);
-                }
+                var hooked = false;
+                AttachLanguageMenu(item, system, () => captured, ref hooked);
                 menu.Items.Insert(insertAt++, item);
                 _accountMenuItems.Add(item);
             }
         }
+    }
+
+    /// <summary>
+    /// 给账号菜单项挂语言二级菜单（悬停展开 ZH / EN），并实现「直接点父项主体按配置语言登录」。
+    /// WPF 中带子菜单的 MenuItem 点击父项不会触发 Click，故用 PreviewMouseLeftButtonUp：
+    /// 点在右侧箭头区（约 26px）交给 WPF 展开子菜单，点在文字区则直接登录并关闭菜单。
+    /// <paramref name="hooked"/> 防止同一 MenuItem（默认项常驻）被重复挂接预览事件。
+    /// </summary>
+    private void AttachLanguageMenu(MenuItem item, SapSystem system, Func<Credential?> accountGetter, ref bool hooked)
+    {
+        foreach (var lang in AccountService.LoginLanguages)
+        {
+            var langItem = new MenuItem { Header = lang };
+            langItem.Click += async (_, _) =>
+            {
+                var a = accountGetter();
+                if (a is not null) await LoginAsync(system, a, languageOverride: lang);
+            };
+            item.Items.Add(langItem);
+        }
+
+        if (hooked) return;
+        hooked = true;
+        item.PreviewMouseLeftButtonUp += async (_, e) =>
+        {
+            if (e.Handled) return;
+            var pos = e.GetPosition(item);
+            if (item.ActualWidth > 0 && pos.X >= item.ActualWidth - 26) return; // 箭头区：让子菜单展开
+            var a = accountGetter();
+            var s = Current; // 事件只挂一次，须在触发时读取当前连接，避免闭包捕获过期 system
+            if (a is null || s is null) return; // 无账号时保留 MenuLogin 原 Click 行为（弹编辑框）
+            e.Handled = true;
+            if (SystemList.ContextMenu is { } cm) cm.IsOpen = false;
+            await LoginAsync(s, a);
+        };
     }
 
     private SapSystem? Current => SystemList.SelectedItem as SapSystem;

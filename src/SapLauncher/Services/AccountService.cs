@@ -151,6 +151,44 @@ public static class AccountService
     }
 
     /// <summary>
+    /// 把来源条目的非空信息合并进 keeper（姓名/密码/语言/Tcode/登录组/记住/默认）。
+    /// 供「删除时保留带姓名条目」与工作副本去重共用，避免两处逻辑漂移。
+    /// </summary>
+    public static void MergeInto(Credential keeper, Credential src)
+    {
+        if (ReferenceEquals(keeper, src)) return;
+        if (string.IsNullOrWhiteSpace(keeper.DisplayName) && !string.IsNullOrWhiteSpace(src.DisplayName))
+            keeper.DisplayName = src.DisplayName;
+        if (string.IsNullOrEmpty(keeper.Password) && !string.IsNullOrEmpty(src.Password))
+            keeper.Password = src.Password;
+        if (string.IsNullOrWhiteSpace(keeper.Language) && !string.IsNullOrWhiteSpace(src.Language))
+            keeper.Language = src.Language;
+        if (string.IsNullOrWhiteSpace(keeper.Tcode) && !string.IsNullOrWhiteSpace(src.Tcode))
+            keeper.Tcode = src.Tcode;
+        if (string.IsNullOrWhiteSpace(keeper.LogonGroup) && !string.IsNullOrWhiteSpace(src.LogonGroup))
+            keeper.LogonGroup = src.LogonGroup;
+        keeper.Remember |= src.Remember;
+        keeper.IsDefault |= src.IsDefault;
+    }
+
+    /// <summary>
+    /// 删除「客户端+账号」分组后决定保留哪条：候选（已排除用户选中的那条）中
+    /// 若存在带姓名的条目，取信息最全的一条，把其余候选的非空信息合并进去后返回；
+    /// 若都不带姓名，返回 null，表示整体删除该账号。
+    /// </summary>
+    public static Credential? PickDeletionKeeper(IEnumerable<Credential> candidates)
+    {
+        var list = candidates.Where(c => c is not null).ToList();
+        var named = list.Where(c => !string.IsNullOrWhiteSpace(c.DisplayName)).ToList();
+        if (named.Count == 0) return null;
+        var keeper = named.OrderByDescending(c => c.Password?.Length ?? 0)
+                          .ThenByDescending(c => c.UpdatedAt)
+                          .First();
+        foreach (var c in list) MergeInto(keeper, c);
+        return keeper;
+    }
+
+    /// <summary>
     /// 删除账号。若删的是默认账号，自动把剩余账号中最近更新的提升为默认。
     /// </summary>
     public static void Delete(VaultService vault, string uuid, string client, string user, bool persist = true)

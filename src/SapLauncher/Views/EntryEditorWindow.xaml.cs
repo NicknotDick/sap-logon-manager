@@ -312,13 +312,40 @@ public partial class EntryEditorWindow : Window
         }
 
         var target = _selectedAccount;
-        var label = string.IsNullOrWhiteSpace(target.User) ? Localizer.Get("Editor.User") : target.User;
+        var user = target.User ?? "";
+        var label = string.IsNullOrWhiteSpace(user) ? Localizer.Get("Editor.User") : user;
         if (MessageBox.Show(string.Format(Localizer.Get("Editor.DeleteAccountConfirm"), label),
                 Localizer.Get("App.Title"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) != MessageBoxResult.OK)
             return;
 
-        _accounts.Remove(target);
-        RefreshAccountList();
+        // 以「客户端 + 账号」为单位删除：同名条目（如一条带姓名、一条不带）只处理一次。
+        // 若同名组里除被删条目外还有带姓名的，则保留它并合并被删条目的有效信息；否则整组删除。
+        var sameGroup = _accounts.Where(a => string.Equals(a.User, user, StringComparison.OrdinalIgnoreCase)).ToList();
+        var wasDefault = AppServices.Vault.IsUnlocked &&
+                         (AppServices.Vault.GetByUser(_system.Uuid, _currentClient, user)?.IsDefault == true ||
+                          sameGroup.Any(a => a.IsDefault));
+        var keeper = AccountService.PickDeletionKeeper(sameGroup.Where(a => !ReferenceEquals(a, target)));
+        if (keeper is not null) keeper.IsDefault = wasDefault;
+        foreach (var a in sameGroup) _accounts.Remove(a);
+        if (keeper is not null)
+        {
+            AccountService.MergeInto(keeper, target);
+            if (string.IsNullOrWhiteSpace(keeper.Client)) keeper.Client = target.Client;
+            _accounts.Add(keeper);
+        }
+
+        // 立即落盘，不再依赖「保存」时的差异同步——否则关窗后同名条目会从凭据库复活，表现为「删不掉」。
+        if (AppServices.Vault.IsUnlocked)
+        {
+            AccountService.Delete(AppServices.Vault, _system.Uuid, _currentClient, user, persist: false);
+            if (keeper is not null)
+                AccountService.Save(AppServices.Vault, keeper, out _, persist: false);
+            AppServices.Vault.Save();
+            _system.DefaultUser = AppServices.Vault.GetAny(_system.Uuid)?.Display ?? "";
+        }
+
+        RefreshAccountList(keeper?.User);
+        ShowInfo(string.Format(Localizer.Get("Editor.AccountDeleted"), label));
     }
 
     private void OnSetDefault(object sender, RoutedEventArgs e)
@@ -654,6 +681,14 @@ public partial class EntryEditorWindow : Window
 
     private void ShowError(string message)
     {
+        ErrorText.Foreground = System.Windows.Media.Brushes.IndianRed;
+        ErrorText.Text = message;
+        ErrorText.Visibility = Visibility.Visible;
+    }
+
+    private void ShowInfo(string message)
+    {
+        ErrorText.Foreground = System.Windows.Media.Brushes.SeaGreen;
         ErrorText.Text = message;
         ErrorText.Visibility = Visibility.Visible;
     }

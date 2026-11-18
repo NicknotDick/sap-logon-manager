@@ -127,6 +127,7 @@
     <sys:String x:Key="Editor.AccaultDup">This account already exists</sys:String>
     <sys:String x:Key="Editor.UserRequired">User is required</sys:String>
     <sys:String x:Key="Editor.DeleteAccountConfirm">Delete account {0}?</sys:String>
+    <sys:String x:Key="Editor.AccountDeleted">Deleted account {0}</sys:String>
     <sys:String x:Key="Editor.DirectTcode">Jump to transaction after logon</sys:String>
     <sys:String x:Key="Editor.DirectTcodeHint">When checked, logon jumps straight to the "Start transaction" code filled in for the account above; if it is empty, nothing happens.</sys:String>
     <sys:String x:Key="Editor.LoginMethod">Logon method</sys:String>

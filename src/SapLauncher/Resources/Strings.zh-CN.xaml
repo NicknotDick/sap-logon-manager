@@ -127,6 +127,7 @@
     <sys:String x:Key="Editor.AccaultDup">该账号已存在</sys:String>
     <sys:String x:Key="Editor.UserRequired">账号不能为空</sys:String>
     <sys:String x:Key="Editor.DeleteAccountConfirm">确认删除账号 {0}？</sys:String>
+    <sys:String x:Key="Editor.AccountDeleted">已删除账号 {0}</sys:String>
     <sys:String x:Key="Editor.DirectTcode">登录后直达事务码</sys:String>
     <sys:String x:Key="Editor.DirectTcodeHint">勾选后，登录成功会自动进入该账号上方填写的「起始事务码」；未填写事务码则不跳转。</sys:String>
     <sys:String x:Key="Editor.LoginMethod">登录方式</sys:String>
