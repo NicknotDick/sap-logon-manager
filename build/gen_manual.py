@@ -115,9 +115,9 @@ p("操作使用手册  |  User Manual", font_size=17, alignment="center", space_
 p("中英双语版 · Chinese-English Bilingual Edition",
   font_size=11, alignment="center", font_color=GREY, space_after=18)
 kv([
-    ("软件版本 / Version", "GURURU202611181112"),
+    ("软件版本 / Version", "GURURU202611181818"),
     ("发行版本 / Release", "v1.6.3"),
-    ("文档日期 / Date", "2026-11-10"),
+    ("文档日期 / Date", "2026-11-18"),
     ("适用平台 / Platform", "Windows 10 / 11（64 位）/ 64-bit"),
     ("SAP 客户端 / SAP GUI", "7.40 及以上（已在 8.0 实测）/ 7.40 or later (verified on 8.0)"),
     ("作者 / Author", "Gururu Nick"),
@@ -148,6 +148,7 @@ ul([
     "14. 数据存储与迁移 / Data Storage & Migration",
     "15. 隐私与免责声明 / Privacy & Disclaimer",
     "16. 从源码构建 / Build from Source",
+    "17. 版本迭代 / Version History",
 ])
 spacer(6)
 note("插图声明：本手册所有界面截图均取自独立的演示数据环境，系统名、SID、主机地址、账号、分组与路径全部为虚构示例（IP 采用 RFC 5737 文档保留地址），截图中不含任何真实业务系统、服务器、账号或个人信息。",
@@ -276,11 +277,12 @@ kv([
     ("系统删除 / Removed", "标注「失效」并置灰置底，不删除条目；凭据仍在，可手动删除 / Marked invalid and greyed out; entries and credentials kept until deleted manually"),
     ("手工添加 / Manual", "自己手工添加的连接完全不受同步影响 / Manually added connections are never touched by sync"),
 ], key_width=125)
-note("每次同步前自动创建快照，可在「设置 → 数据与诊断 → 回滚到最近快照」还原。配置文件读取异常时不会覆盖旧清单，"
+note("每次同步前自动创建快照，可在「设置 → 数据与诊断 → 回滚到最近快照」还原；回滚同样会自动完成老数据字段的迁移与兜底。配置文件读取异常时不会覆盖旧清单，"
      "只报错、不清空列表。程序启动时会静默同步一次；SAP Logon 配置变化时也会自动同步。",
-     "A snapshot is taken before every sync and can be restored in Settings → Data & Diagnostics. If the "
-     "configuration file cannot be parsed, the old list is kept and an error is reported — the list is never "
-     "cleared. The program also syncs silently at startup and whenever SAP Logon configuration changes.")
+     "A snapshot is taken before every sync and can be restored in Settings → Data & Diagnostics; restoring "
+     "also migrates legacy fields automatically. If the configuration file cannot be parsed, the old list is "
+     "kept and an error is reported — the list is never cleared. The program also syncs silently at startup "
+     "and whenever SAP Logon configuration changes.")
 
 # ============================== 6. 批量登录 ==============================
 h1("6. 批量登录", "6. Batch Logon")
@@ -312,11 +314,11 @@ en("Any number of clients can be stored under one connection, and any number of 
 kv([
     ("新增账号 / Add", "点「新增账号」，填写账号（可绑定姓名）与密码后保存；不限制数量 / Click “Add account”, fill in account (optionally a display name) and password; no limit"),
     ("设为默认 / Set default", "选中账号点「设为默认」，同客户端其它账号自动取消默认；各客户端各有一个默认 / Select an account and click “Set default”; each client keeps its own default"),
-    ("删除账号 / Delete", "删除的是默认账号时，自动把剩余账号提升一个为默认 / When the default is deleted, the next remaining account is promoted automatically"),
+    ("删除账号 / Delete", "确认后立即写盘生效，无需再点保存；同一账号存在多条时只保留带姓名的那条并合并信息（都不带姓名才整条删除）；删除默认账号时自动提升剩余一个为默认 / Deletion takes effect immediately on confirm; if the same account has duplicates, only the named entry is kept (merged) — otherwise the whole entry is removed; deleting the default promotes another account automatically"),
     ("切换客户端 / Switch client", "客户端下拉列出该连接已保存过的全部客户端，也可直接输入新客户端号；切换时未保存的编辑不会丢失 / The client drop-down lists every stored client and accepts new values; unsaved edits survive switching"),
     ("保存 / Save", "一次保存同步所有已切换过的客户端，整库只加密写盘一次 / One save synchronises every touched client and writes the encrypted vault once"),
 ], key_width=140)
-fig("editor-multi.png", "多账号列表、不限数量提示与本系统客户端概览（示例账号）", "Multiple accounts, the “no limit” counter and the client overview (demo accounts)", 300)
+fig("editor-multi.png", "多账号列表、不限数量提示与登录过的客户端概览（示例账号）", "Multiple accounts, the “no limit” counter and the logged-on client overview (demo accounts)", 300)
 
 h2("7.2 账号姓名字段", "7.2 Display Name")
 zh("账号可绑定「姓名（可选）」。保存后，登录菜单、主列表「上次登录」等处统一显示为「姓名 (账号)」"
@@ -326,10 +328,10 @@ en("An optional display name can be bound to each account. Wherever the account 
 
 h2("7.3 登录时选客户端与账号", "7.3 Choosing a Client & Account at Logon")
 ul([
-    "右键连接，菜单显示「登录（默认 XX）」与各账号的「以 XX 登录」子项。/ Right-click a connection: “Log on (default XX)” plus one entry per account.",
-    "该连接存有多个客户端时，账号按「客户端 100 / 客户端 300 / …」二级菜单分组，可直接选任意客户端下的任意账号登录，无需先切编辑器。/ With several clients, accounts are grouped into “Client 100 / Client 300 / …” sub-menus, so any account on any client can be chosen directly without switching clients in the editor first.",
-    "双击行或点「登录」→ 使用默认账号（仍是最近使用客户端的默认账号）。/ Double-click or “Log on” uses the default account (the default of the most recently used client).",
-    "点「以 XX 登录」→ 使用指定账号。/ “Log on as XX” uses that specific account.",
+    "右键连接：菜单平铺列出全部账号，每行显示「客户端 · 账号（姓名）」，客户端仅显示数字；带 Enter 标记的一行是默认账号，同一账号只出现一次。/ Right-click a connection: every account is listed flat as “Client · Account (Name)” with the client number only. The row marked Enter is the default account, and no account appears twice.",
+    "鼠标悬停到账号文字右方的空白/箭头区域，展开语言子菜单 ZH / EN；点某个语言，即用该账号以所选语言登录。/ Hovering over the blank/arrow area to the right of the account text opens a ZH / EN language submenu; picking a language logs on with that account in the chosen language.",
+    "直接点击账号文字 → 按该账号保存的语言登录。/ Clicking the account text itself logs on with the language saved on the account.",
+    "双击行或按 Enter 键 → 使用默认账号按其配置语言一键登录。/ Double-click or the Enter key logs on with the default account in its configured language.",
     "批量登录始终使用各系统的默认账号。/ Batch logon always uses each system's default account.",
 ])
 en("Saved passwords can also be updated here at any time; the change is written to the encrypted vault "
@@ -404,9 +406,11 @@ note("从旧版本升级时，请先在托盘中退出旧实例再启动新版�
      "the request, which looks like “nothing happens on double-click”.")
 
 h2("9.7 版本标识", "9.7 Version Tag")
-zh("状态栏左下角显示当前构建版本，格式为 GURURU+YYYYMMDDHHMM（取自构建时间，精确到分钟），「关于」窗口中同步展示。")
+zh("状态栏左下角显示当前构建版本，格式为 GURURU+YYYYMMDDHHMM（取自构建时间，精确到分钟），「关于」窗口中同步展示；"
+   "「关于」中的数据目录路径可点击，直接在资源管理器中打开对应文件夹。")
 en("The status bar (bottom-left) shows the build version in GURURU+YYYYMMDDHHMM format (build timestamp, "
-   "minute precision), also displayed in the About window.")
+   "minute precision), also displayed in the About window. In the About window the data-directory path is "
+   "clickable and opens the folder directly in Explorer.")
 fig("about.png", "关于窗口中的版本标识与数据目录", "Version tag and data directory in the About window", 300)
 
 h2("9.8 粘贴新建", "9.8 Paste to Create")
@@ -565,8 +569,30 @@ zh("产物输出至 dist\\SAP登录管理器.exe（自包含单文件，原生�
 en("Requires the .NET 8 SDK. Run the command above in the project root; output goes to "
    "dist\\SAP登录管理器.exe (self-contained single file with native libraries alongside). Alternatively, "
    "double-click “一键打包.bat” for a one-shot clean build.")
+
+# ============================== 17. 版本迭代 ==============================
+h1("17. 版本迭代", "17. Version History")
+zh("按时间倒序列出的版本更新摘要：")
+en("Release notes in reverse chronological order:")
+tbl(["版本 / Ver", "日期 / Date", "更新摘要 / Summary"],
+    [
+     ["v1.6.3", "2026-11-18",
+      "同一连接支持多客户端 × 多账号，数量不限；右键菜单平铺显示「客户端 · 账号（姓名）」，悬停文字右方展开 ZH/EN 语言子菜单，点语言按所选语言登录、点文字按配置语言登录；删除账号即时落盘（同名重复保留带姓名条目）；编辑器只显示成功登录过的客户端；快照回滚自动完成老数据迁移；「关于」数据目录可点击打开。"],
+     ["v1.6.2", "2026-11-14",
+      "修复快速搜索窗口关闭时偶发的异常（窗口关闭重入）；错误日志记录完整堆栈。"],
+     ["v1.6.1", "2026-11-10",
+      "第二实例启动直接唤出已有窗口，解决「双击像打不开」；操作手册新增 13 张演示数据截图。"],
+     ["v1.6.0", "2026-11-10",
+      "窗口回到前台或内部有操作时即时刷新连通状态（带节流）；主密码改为可选，默认不启用即可使用。"],
+     ["v1.5.3", "2026-11-05",
+      "SAP GUI 探测增强（注册表 / 卸载项 / PATH / 全盘常见路径）并支持手动指定；登录弹框自动填表引入可信目录集合；默认配置调整（闲置锁定默认关闭、默认允许命令行带密码）。"],
+     ["v1.5.0", "2026-11-02",
+      "首个发布版本：连接同步、凭据加密保存、一键/批量登录、分组收藏、事务码直达、脚本绑定、导入导出与便携模式。"],
+    ],
+    col_widths=[62, 78, 358])
+
 hr()
-p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611181112",
+p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611181818",
   font_size=9, alignment="center", font_color="#888888")
 
 # ============================== 输出配置 ==============================
