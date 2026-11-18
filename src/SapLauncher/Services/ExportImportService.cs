@@ -19,6 +19,7 @@ public class ExportSystem
     public string Alias { get; set; } = "";
     public EnvKind Env { get; set; }
     public string LastClient { get; set; } = "";
+    public List<string> LoggedInClients { get; set; } = new();
     public bool DirectTcode { get; set; }
     public string LoginMethod { get; set; } = "Auto";
     public string Uuid { get; set; } = "";
@@ -71,6 +72,7 @@ public static class ExportImportService
                 Alias = s.Alias,
                 Env = s.Env,
                 LastClient = s.LastClient,
+                LoggedInClients = (s.LoggedInClients ?? new List<string>()).ToList(),
                 DirectTcode = s.DirectTcode,
                 LoginMethod = s.LoginMethod,
                 Uuid = s.Uuid
@@ -175,6 +177,7 @@ public static class ExportImportService
                 hit.Alias = s.Alias;
                 hit.Env = s.Env;
                 hit.LastClient = s.LastClient;
+                hit.LoggedInClients = (s.LoggedInClients ?? new List<string>()).ToList();
                 hit.DirectTcode = s.DirectTcode;
                 hit.LoginMethod = s.LoginMethod;
                 updated++;
@@ -197,6 +200,7 @@ public static class ExportImportService
                 Env = s.Env,
                 EnvManual = s.Env != EnvKind.Unknown,
                 LastClient = s.LastClient,
+                LoggedInClients = (s.LoggedInClients ?? new List<string>()).ToList(),
                 DirectTcode = s.DirectTcode,
                 LoginMethod = s.LoginMethod,
                 IsLocal = true,

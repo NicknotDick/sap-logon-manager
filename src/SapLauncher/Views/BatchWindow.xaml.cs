@@ -76,6 +76,7 @@ public partial class BatchWindow : Window
             system.LastLogin = DateTime.Now;
             system.LoginCount++;
             system.LastClient = client;
+            AccountService.MarkLoggedInClient(system, client);
             system.IsNew = false;
         }
         return result;

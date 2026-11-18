@@ -813,6 +813,7 @@ public partial class MainWindow : Window
             system.LastLogin = DateTime.Now;
             system.LoginCount++;
             system.LastClient = client;
+            AccountService.MarkLoggedInClient(system, client);
             system.IsNew = false;
             if (cred is not null) system.DefaultUser = cred.Display;
             AppServices.Manifest.Save();

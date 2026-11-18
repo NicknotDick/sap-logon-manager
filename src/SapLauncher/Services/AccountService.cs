@@ -48,6 +48,33 @@ public static class AccountService
            string.Equals(a.Client, b.Client, StringComparison.Ordinal) &&
            string.Equals(a.User, b.User, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// 登录成功后把本次客户端记入「登录过的客户端」列表（去重、忽略大小写、
+    /// 客户端号为空则忽略）。返回是否发生了新增。客户端号按数值升序排列便于展示。
+    /// </summary>
+    public static bool MarkLoggedInClient(SapSystem system, string? client)
+    {
+        if (string.IsNullOrWhiteSpace(client)) return false;
+        var c = client.Trim();
+        system.LoggedInClients ??= new List<string>();
+        if (system.LoggedInClients.Any(x => string.Equals(x, c, StringComparison.OrdinalIgnoreCase)))
+            return false;
+        system.LoggedInClients.Add(c);
+        SortClients(system.LoggedInClients);
+        return true;
+    }
+
+    /// <summary>客户端号按数值升序（非数字排后），供列表展示统一使用。</summary>
+    public static void SortClients(List<string> clients)
+        => clients.Sort((a, b) =>
+        {
+            var an = int.TryParse(a, out var x);
+            var bn = int.TryParse(b, out var y);
+            if (an && bn && x != y) return x.CompareTo(y);
+            if (an != bn) return an ? -1 : 1;
+            return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+        });
+
     /// <summary>某客户端已保存的账号数（仅用于展示，不再作为限制条件）。</summary>
     public static int Count(VaultService vault, string uuid, string client)
         => vault.Items.Count(c => c.SystemUuid == uuid &&

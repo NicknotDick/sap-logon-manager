@@ -121,7 +121,7 @@
     <sys:String x:Key="Editor.SetDefault">Set as default</sys:String>
     <sys:String x:Key="Editor.DeleteAccount">Delete account</sys:String>
     <sys:String x:Key="Editor.AccountCount">Saved accounts: {0} (no limit)</sys:String>
-    <sys:String x:Key="Editor.ClientsSaved">Clients: </sys:String>
+    <sys:String x:Key="Editor.ClientsSaved">Logged-in clients: </sys:String>
     <sys:String x:Key="Editor.AccountEmpty">No account yet. Fill in the fields below and save.</sys:String>
     <sys:String x:Key="Editor.AccountLimit">No limit on the number of accounts</sys:String>
     <sys:String x:Key="Editor.AccaultDup">This account already exists</sys:String>

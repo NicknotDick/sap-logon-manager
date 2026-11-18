@@ -491,7 +491,8 @@ public static class SelfTest
                 var systems = new List<SapSystem>
                 {
                     new() { Uuid = "u1", Name = "导出测试", Sid = "DQ1", Host = "1.2.3.4", Port = 3200, Group = "G1",
-                            DirectTcode = true, LoginMethod = "CmdPw" }
+                            DirectTcode = true, LoginMethod = "CmdPw",
+                            LoggedInClients = new List<string> { "800", "300", "500" } }
                 };
                 var groups = new List<GroupDef> { new() { Name = "G1" } };
                 var file = Path.Combine(sandbox, "bundle.json");
@@ -510,6 +511,8 @@ public static class SelfTest
                 if (!t0.DirectTcode) throw new InvalidOperationException("导出/导入未保住 DirectTcode（登录后直达事务码）");
                 if (!string.Equals(t0.LoginMethod, "CmdPw", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("导出/导入未保住 LoginMethod");
+                if (t0.LoggedInClients is null || !t0.LoggedInClients.SequenceEqual(new[] { "800", "300", "500" }))
+                    throw new InvalidOperationException("导出/导入未保住登录过的客户端列表");
 
                 var fresh = new VaultService();
                 fresh.Initialize("other-pwd");
@@ -898,6 +901,27 @@ public static class SelfTest
                 AppPaths.OverrideRoot(original);
                 try { Directory.Delete(sandbox, true); } catch { }
             }
+        });
+
+        Check("登录过的客户端记录（去重/排序/空值）", () =>
+        {
+            var sys = new SapSystem { Uuid = "lc-u", Name = "客户端历史", Sid = "DQ1", Host = "1.2.3.4" };
+            if (!AccountService.MarkLoggedInClient(sys, "500")) throw new InvalidOperationException("首次记录应返回 true");
+            AccountService.MarkLoggedInClient(sys, "300");
+            AccountService.MarkLoggedInClient(sys, "800");
+            if (!sys.LoggedInClients.SequenceEqual(new[] { "300", "500", "800" }))
+                throw new InvalidOperationException("应按客户端号数值升序");
+            // 重复（含大小写/空白差异）不得再次加入
+            if (AccountService.MarkLoggedInClient(sys, " 500 ")) throw new InvalidOperationException("空白差异应视为重复");
+            if (AccountService.MarkLoggedInClient(sys, "800")) throw new InvalidOperationException("重复客户端不应新增");
+            if (sys.LoggedInClients.Count != 3) throw new InvalidOperationException("去重后仍应为 3 条");
+            // 空值忽略
+            if (AccountService.MarkLoggedInClient(sys, "  ")) throw new InvalidOperationException("空客户端应忽略");
+            if (AccountService.MarkLoggedInClient(sys, null)) throw new InvalidOperationException("null 客户端应忽略");
+            // 非数字客户端排最后
+            AccountService.MarkLoggedInClient(sys, "ABC");
+            if (sys.LoggedInClients.Last() != "ABC") throw new InvalidOperationException("非数字客户端应排在最后");
+            sb.AppendLine("      成功登录客户端去重、数值升序、非数字排后、空值忽略均正确");
         });
 
         // 9. 命令行密码：默认开启 + 一次性迁移 + 尊重用户手动关闭

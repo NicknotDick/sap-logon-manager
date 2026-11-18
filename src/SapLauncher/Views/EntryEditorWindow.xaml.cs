@@ -12,7 +12,7 @@ public partial class EntryEditorWindow : Window
     private readonly bool _credentialOnly;
     private readonly List<string> _clients = new();
 
-    /// <summary>本系统在凭据库中已保存过的客户端号（下拉候选与界面概览）。</summary>
+    /// <summary>本系统在凭据库中已保存过账号的客户端号（仅用于下拉候选，不用于概览展示）。</summary>
     private readonly List<string> _savedClients = new();
 
     /// <summary>各客户端的账号工作副本。切换客户端不再丢弃未保存的编辑。</summary>
@@ -151,11 +151,12 @@ public partial class EntryEditorWindow : Window
         _selectedAccount = target;
         if (target is not null) AccountList.SelectedItem = target;
 
-        // 账号数量不设上限；附带本系统已保存的客户端概览，便于多客户端管理
-        var clients = _savedClients
-            .OrderBy(c => int.TryParse(c, out var n) ? n : int.MaxValue)
-            .ThenBy(c => c, StringComparer.OrdinalIgnoreCase)
+        // 账号数量不设上限；只展示该连接「成功登录过」的客户端（与是否保存过账号无关）
+        var clients = (_system.LoggedInClients ?? new List<string>())
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        AccountService.SortClients(clients);
         var overview = clients.Count > 0
             ? "   ·   " + Localizer.Get("Editor.ClientsSaved") + string.Join(" / ", clients)
             : "";

@@ -103,6 +103,12 @@ public class SapSystem : ObservableObject
     public bool DirectTcode { get; set; }
     public List<string> Scripts { get; set; } = new();
 
+    /// <summary>
+    /// 该连接下曾经「成功登录」过的客户端编号（与凭据库是否保存过账号无关）。
+    /// 每次登录成功后把本次客户端去重记入；用于编辑器只展示真正登录过的客户端。
+    /// </summary>
+    public List<string> LoggedInClients { get; set; } = new();
+
     /// <summary>当前默认账号名（仅界面显示，来自加密库，不持久化）。</summary>
     [JsonIgnore] public string DefaultUser { get; set; } = "";
 

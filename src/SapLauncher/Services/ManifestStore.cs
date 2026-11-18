@@ -41,6 +41,16 @@ public sealed class ManifestStore
         Data.Systems ??= new List<SapSystem>();
         Data.Groups ??= new List<GroupDef>();
         Data.Scripts ??= new List<ScriptDef>();
+
+        // 老数据兼容：新字段「登录过的客户端」在旧 manifest 里不存在。
+        // 用原有 LastClient（登录成功时记录的最后客户端）作为种子迁移一次，
+        // 之后每次登录成功由 AccountService.MarkLoggedInClient 继续累积。
+        foreach (var s in Data.Systems)
+        {
+            s.LoggedInClients ??= new List<string>();
+            if (s.LoggedInClients.Count == 0 && !string.IsNullOrWhiteSpace(s.LastClient))
+                s.LoggedInClients.Add(s.LastClient.Trim());
+        }
     }
 
     public void Save()

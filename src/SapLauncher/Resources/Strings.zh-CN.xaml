@@ -121,7 +121,7 @@
     <sys:String x:Key="Editor.SetDefault">设为默认</sys:String>
     <sys:String x:Key="Editor.DeleteAccount">删除账号</sys:String>
     <sys:String x:Key="Editor.AccountCount">已保存账号 {0} 个（不限数量）</sys:String>
-    <sys:String x:Key="Editor.ClientsSaved">本系统客户端：</sys:String>
+    <sys:String x:Key="Editor.ClientsSaved">登录过的客户端：</sys:String>
     <sys:String x:Key="Editor.AccountEmpty">还没有保存账号，填写下方信息后保存</sys:String>
     <sys:String x:Key="Editor.AccountLimit">账号数量不设上限</sys:String>
     <sys:String x:Key="Editor.AccaultDup">该账号已存在</sys:String>
