@@ -998,17 +998,20 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 默认登录项与普通项格式完全一致：客户端（纯数字） · 账号（姓名） · 语言，不带"（默认）"
+        // 默认登录项（带 Enter）取「最近使用客户端的默认账号」，双击/Enter 行为不变。
+        // 格式与普通项完全一致：客户端（纯数字） · 账号（姓名） · 语言，默认项靠 Enter 字样区分。
         var def = AppServices.Vault.GetAny(system.Uuid) ?? all[0];
         MenuLogin.Header = AccountService.FormatEntryLine(def);
 
         var insertAt = menu.Items.IndexOf(MenuLogin) + 1;
 
-        // 全部平铺：客户端数值升序、组内默认优先；每项自带客户端/账号/姓名/语言
+        // 全部平铺：客户端数值升序、组内默认优先；每项自带客户端/账号/姓名/语言。
+        // 与默认登录项相同的那条跳过，避免同一账号在菜单里重复出现两次。
         foreach (var group in groups)
         {
             foreach (var account in group.Accounts)
             {
+                if (AccountService.IsSameAccount(account, def)) continue;
                 var header = AccountService.FormatEntryLine(account);
                 var item = new MenuItem { Header = header };
                 var captured = account;

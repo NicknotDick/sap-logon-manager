@@ -882,7 +882,16 @@ public static class SelfTest
                     != "SYSD（张三） · ZH")
                     throw new InvalidOperationException("语言为空应按 ZH");
 
-                sb.AppendLine("      八条(100/300 各 1-4)全部保存；跨客户端同名账号独立；同账号覆盖；语言随条；菜单整行『客户端 账号（姓名）·语言』无默认字样");
+                // 默认登录项（带 Enter）与平铺项去重：同系统+同客户端+同账号视为同一条
+                var defItem = new Credential { SystemUuid = "u", Client = "800", User = "SYSD", DisplayName = "Nick", Language = "ZH", IsDefault = true };
+                if (!AccountService.IsSameAccount(defItem, new Credential { SystemUuid = "u", Client = "800", User = "sysd" }))
+                    throw new InvalidOperationException("同账号（大小写不同）应判定为同一条，平铺项须跳过避免重复");
+                if (AccountService.IsSameAccount(defItem, new Credential { SystemUuid = "u", Client = "900", User = "SYSD" }))
+                    throw new InvalidOperationException("不同客户端的同名账号是不同条，不应跳过");
+                if (AccountService.IsSameAccount(defItem, new Credential { SystemUuid = "u", Client = "800", User = "OTHER" }))
+                    throw new InvalidOperationException("同客户端不同账号不应跳过");
+
+                sb.AppendLine("      八条(100/300 各 1-4)全部保存；跨客户端同名账号独立；同账号覆盖；语言随条；菜单整行『客户端 账号（姓名）·语言』无默认字样；默认项与平铺项去重正确");
             }
             finally
             {

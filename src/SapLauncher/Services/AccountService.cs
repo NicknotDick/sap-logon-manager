@@ -30,13 +30,23 @@ public static class AccountService
 
     /// <summary>
     /// 右键菜单整行文本：「客户端 · 账号（姓名） · 语言」。客户端仅显示数字，
-    /// 不显示"客户端"字样，语言后也不附加"（默认）"。默认登录项与普通项统一使用此格式。
+    /// 不显示"客户端"字样，也不附加任何默认标记文字（默认项由带 Enter 字样的独立项标识）。
+    /// 默认登录项与普通项统一使用此格式。
     /// </summary>
     public static string FormatEntryLine(Credential c)
     {
         var client = string.IsNullOrWhiteSpace(c.Client) ? "—" : c.Client.Trim();
         return client + " · " + FormatAccountBrief(c);
     }
+
+    /// <summary>
+    /// 两条凭据是否指向同一账号（同系统 + 同客户端 + 同账号），用于右键菜单去重：
+    /// 默认登录项已经显示的那条，平铺列表里不再重复显示。
+    /// </summary>
+    public static bool IsSameAccount(Credential a, Credential b)
+        => string.Equals(a.SystemUuid, b.SystemUuid, StringComparison.Ordinal) &&
+           string.Equals(a.Client, b.Client, StringComparison.Ordinal) &&
+           string.Equals(a.User, b.User, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>某客户端已保存的账号数（仅用于展示，不再作为限制条件）。</summary>
     public static int Count(VaultService vault, string uuid, string client)
