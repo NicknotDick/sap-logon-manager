@@ -865,7 +865,18 @@ public static class SelfTest
                 if (!groups[0].Accounts.Any(a => a.Display == "李四 (U2)"))
                     throw new InvalidOperationException("显示串应为『姓名 (账号)』");
 
-                sb.AppendLine("      八条(100/300 各 1-4)全部保存；跨客户端同名账号独立；同账号覆盖；语言随条；分组『姓名 (账号)』正确");
+                // 右键菜单平铺项：客户端 + 账号（姓名） · 语言；姓名为空省略括号
+                if (AccountService.FormatAccountBrief(new Credential { User = "SYSD", DisplayName = "张三", Language = "EN" })
+                    != "SYSD（张三） · EN")
+                    throw new InvalidOperationException("菜单简要串应为『账号（姓名） · 语言』");
+                if (AccountService.FormatAccountBrief(new Credential { User = "SYSD", Language = "ZH" })
+                    != "SYSD · ZH")
+                    throw new InvalidOperationException("姓名为空时菜单应省略括号");
+                if (AccountService.FormatAccountBrief(new Credential { User = "SYSD", DisplayName = "张三" })
+                    != "SYSD（张三） · ZH")
+                    throw new InvalidOperationException("语言为空应按 ZH");
+
+                sb.AppendLine("      八条(100/300 各 1-4)全部保存；跨客户端同名账号独立；同账号覆盖；语言随条；菜单『客户端 账号（姓名）·语言』正确");
             }
             finally
             {

@@ -977,8 +977,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 在「登录」项后插入账号菜单。单客户端时平铺账号；多客户端时按
-    /// 「客户端 → 账号」二级菜单展开，可直接选任意客户端下的任意账号登录。
+    /// 在「登录」项后插入账号菜单。每个凭据平铺为一项，直接显示
+    /// 「客户端 账号（姓名） · 语言」，点选即用该条完整凭据（客户端/账号/密码/语言）登录。
     /// </summary>
     private void BuildAccountMenuItems(SapSystem? system)
     {
@@ -998,40 +998,26 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 默认登录项仍取「最近使用客户端的默认账号」，双击行为保持不变
+        // 默认登录项仍取「最近使用客户端的默认账号」，双击/Enter 行为保持不变
         var def = AppServices.Vault.GetAny(system.Uuid) ?? all[0];
         MenuLogin.Header = string.Format(Localizer.Get("Ctx.LoginDefault"), def.Display);
 
         var insertAt = menu.Items.IndexOf(MenuLogin) + 1;
-        bool grouped = groups.Count > 1;
 
+        // 全部平铺：客户端数值升序、组内默认优先；每项自带客户端/账号/姓名/语言
         foreach (var group in groups)
         {
-            MenuItem? parent = null;
-            if (grouped)
-            {
-                parent = new MenuItem
-                {
-                    Header = string.Format(Localizer.Get("Ctx.ClientGroup"),
-                        string.IsNullOrWhiteSpace(group.Client) ? "—" : group.Client)
-                };
-                menu.Items.Insert(insertAt++, parent);
-                _accountMenuItems.Add(parent);
-            }
-
             foreach (var account in group.Accounts)
             {
-                var header = string.Format(Localizer.Get("Ctx.LoginAs"), account.Display) +
+                var clientText = string.IsNullOrWhiteSpace(account.Client) ? "—" : account.Client;
+                var header = string.Format(Localizer.Get("Ctx.EntryLine"),
+                                 clientText, AccountService.FormatAccountBrief(account)) +
                              (account.IsDefault ? Localizer.Get("Ctx.DefaultSuffix") : "");
                 var item = new MenuItem { Header = header };
                 var captured = account;
                 item.Click += async (_, _) => await LoginAsync(system, captured);
-                if (parent is not null) parent.Items.Add(item);
-                else
-                {
-                    menu.Items.Insert(insertAt++, item);
-                    _accountMenuItems.Add(item);
-                }
+                menu.Items.Insert(insertAt++, item);
+                _accountMenuItems.Add(item);
             }
         }
     }

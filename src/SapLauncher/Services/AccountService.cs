@@ -16,6 +16,19 @@ public sealed class ClientAccountGroup
 /// </summary>
 public static class AccountService
 {
+    /// <summary>
+    /// 右键菜单单条凭据的简要文本：「账号（姓名） · 语言」。姓名为空时省略括号，
+    /// 语言为空按 ZH。客户端号由菜单外层「客户端 {0} · {1}」补上，合起来即
+    /// 「客户端 账号（姓名） · 语言」。抽成纯函数便于自检断言。
+    /// </summary>
+    public static string FormatAccountBrief(Credential c)
+    {
+        var who = (c.User ?? "").Trim();
+        if (!string.IsNullOrWhiteSpace(c.DisplayName)) who += "（" + c.DisplayName.Trim() + "）";
+        var lang = string.IsNullOrWhiteSpace(c.Language) ? "ZH" : c.Language.Trim();
+        return string.IsNullOrEmpty(who) ? lang : who + " · " + lang;
+    }
+
     /// <summary>某客户端已保存的账号数（仅用于展示，不再作为限制条件）。</summary>
     public static int Count(VaultService vault, string uuid, string client)
         => vault.Items.Count(c => c.SystemUuid == uuid &&
