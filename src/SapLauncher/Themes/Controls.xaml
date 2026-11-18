@@ -438,21 +438,46 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="MenuItem">
-                    <Border x:Name="Bd" Background="Transparent" CornerRadius="5" Padding="12,7" Margin="2,1">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <ContentPresenter Grid.Column="0" ContentSource="Header" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{TemplateBinding InputGestureText}"
-                                       Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="20,0,0,0"
-                                       VerticalAlignment="Center" />
-                        </Grid>
-                    </Border>
+                    <!-- ControlTemplate 只能有一个根元素：Grid 内放条目主体与子菜单弹出层 -->
+                    <Grid>
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="5" Padding="12,7" Margin="2,1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <!-- 箭头列 Auto + 固定 26px 内容：有子项时占 26px，无子项时折叠为 0。
+                                         命中区 = 26(列) + 12(右 padding) + 2(右 margin) = 40px，见 MainWindow.ArrowZoneWidth -->
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" ContentSource="Header" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{TemplateBinding InputGestureText}"
+                                           Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="20,0,0,0"
+                                           VerticalAlignment="Center" />
+                                <!-- 子菜单箭头：仅有子项（如登录语言 ZH/EN）时显示 -->
+                                <Grid x:Name="Arrow" Grid.Column="2" Width="26" Visibility="Collapsed">
+                                    <Path Data="M 0 0 L 4 4 L 0 8 Z"
+                                          Fill="{DynamicResource Brush.TextMuted}" Stretch="None"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        <!-- 子菜单弹出容器。PART_Popup 是 WPF MenuItem 的约定模板部件名，
+                             缺失时语言二级菜单整个无法弹出（也不显示箭头） -->
+                        <Popup x:Name="PART_Popup" Placement="Right"
+                               IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                               AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                            <Border Background="{DynamicResource Brush.SurfaceAlt}" BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1" CornerRadius="8" Padding="4">
+                                <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </Border>
+                        </Popup>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
                             <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Brush.SurfaceHover}" />
+                        </Trigger>
+                        <Trigger Property="HasItems" Value="True">
+                            <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.45" />

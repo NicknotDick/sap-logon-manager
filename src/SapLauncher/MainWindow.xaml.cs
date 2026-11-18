@@ -1040,9 +1040,17 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 给账号菜单项挂语言二级菜单（悬停展开 ZH / EN），并实现「直接点父项主体按配置语言登录」。
-    /// WPF 中带子菜单的 MenuItem 点击父项不会触发 Click，故用 PreviewMouseLeftButtonUp：
-    /// 点在右侧箭头区（约 26px）交给 WPF 展开子菜单，点在文字区则直接登录并关闭菜单。
+    /// 右侧箭头命中区宽度（px）：模板中箭头列 26 + 右内边距 12 + 右外边距 2。
+    /// 点在这个区域内交给 WPF 展开语言子菜单，其余区域视为「直接登录」。
+    /// </summary>
+    private const double ArrowZoneWidth = 40;
+
+    /// <summary>
+    /// 给账号菜单项挂语言二级菜单（悬停自动展开 ZH / EN），并实现「直接点父项主体按配置语言登录」。
+    /// WPF 中带子项的 MenuItem 属 Header 角色，鼠标按下任意位置都会展开子菜单而不触发 Click；
+    /// 故在 PreviewMouseLeftButtonDown（隧道阶段）拦截：标记 e.Handled 后 WPF 的
+    /// OnMouseLeftButtonDown 因 !e.Handled 直接跳过 HandleMouseDown/ClickHeader，子菜单不会闪开。
+    /// 点在右侧箭头区（ArrowZoneWidth）则不拦截，交给 WPF 正常展开子菜单。
     /// <paramref name="hooked"/> 防止同一 MenuItem（默认项常驻）被重复挂接预览事件。
     /// </summary>
     private void AttachLanguageMenu(MenuItem item, SapSystem system, Func<Credential?> accountGetter, ref bool hooked)
@@ -1053,24 +1061,25 @@ public partial class MainWindow : Window
             langItem.Click += async (_, _) =>
             {
                 var a = accountGetter();
-                if (a is not null) await LoginAsync(system, a, languageOverride: lang);
+                var s = Current; // 语言项随菜单重建，读取当前连接更稳妥
+                if (a is not null && s is not null) await LoginAsync(s, a, languageOverride: lang);
             };
             item.Items.Add(langItem);
         }
 
         if (hooked) return;
         hooked = true;
-        item.PreviewMouseLeftButtonUp += async (_, e) =>
+        item.PreviewMouseLeftButtonDown += (_, e) =>
         {
             if (e.Handled) return;
             var pos = e.GetPosition(item);
-            if (item.ActualWidth > 0 && pos.X >= item.ActualWidth - 26) return; // 箭头区：让子菜单展开
+            if (item.ActualWidth > 0 && pos.X >= item.ActualWidth - ArrowZoneWidth) return; // 箭头区：让子菜单展开
             var a = accountGetter();
             var s = Current; // 事件只挂一次，须在触发时读取当前连接，避免闭包捕获过期 system
             if (a is null || s is null) return; // 无账号时保留 MenuLogin 原 Click 行为（弹编辑框）
-            e.Handled = true;
+            e.Handled = true; // 阻止 Header 角色在按下阶段展开子菜单
             if (SystemList.ContextMenu is { } cm) cm.IsOpen = false;
-            await LoginAsync(s, a);
+            _ = LoginAsync(s, a);
         };
     }
 
