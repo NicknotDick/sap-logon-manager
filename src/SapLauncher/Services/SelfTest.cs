@@ -801,6 +801,75 @@ public static class SelfTest
                 throw new InvalidOperationException("不应混入其它系统");
         });
 
+        // 9c. 保存维度：客户端 + 姓名 + 账号 + 密码；唯一键=客户端+账号（姓名/密码为属性）；
+        //     登录前按右键「客户端 → 姓名(账号)」分组切换。
+        Check("保存维度（客户端+姓名+账号+密码 / 账号唯一 / 姓名密码为属性）", () =>
+        {
+            var original = AppPaths.Root;
+            var sandbox = Path.Combine(original, "selftest-dimensions");
+            try
+            {
+                AppPaths.OverrideRoot(Path.Combine(sandbox, "data"));
+                Directory.CreateDirectory(AppPaths.Root);
+                var vault = new VaultService();
+                vault.Initialize("dimension-test");
+
+                const string uuid = "sys-dim";
+                // 用户场景：客户端 100 存账户 1-4，客户端 300 存账户 1-4，各带姓名+密码
+                var matrix = new (string Client, string User, string Name, string Pw)[]
+                {
+                    ("100", "U1", "张三", "pw100-1"), ("100", "U2", "李四", "pw100-2"),
+                    ("100", "U3", "王五", "pw100-3"), ("100", "U4", "赵六", "pw100-4"),
+                    ("300", "U1", "张三", "pw300-1"), ("300", "U2", "李四", "pw300-2"),
+                    ("300", "U3", "王五", "pw300-3"), ("300", "U4", "赵六", "pw300-4"),
+                };
+                foreach (var m in matrix)
+                    if (!AccountService.Save(vault, new Credential
+                        {
+                            SystemUuid = uuid, Client = m.Client, User = m.User,
+                            DisplayName = m.Name, Password = m.Pw, Remember = true
+                        }, out var e))
+                        throw new InvalidOperationException($"保存失败 {m.Client}/{m.User}: {e}");
+
+                // 四个维度全部落库
+                if (vault.Items.Count(c => c.SystemUuid == uuid) != 8)
+                    throw new InvalidOperationException("应保存 8 条凭据");
+                var c100u1 = vault.GetByUser(uuid, "100", "U1") ?? throw new InvalidOperationException("缺 100/U1");
+                if (c100u1.DisplayName != "张三" || c100u1.Password != "pw100-1")
+                    throw new InvalidOperationException("姓名/密码未随条保存");
+                var c300u1 = vault.GetByUser(uuid, "300", "U1") ?? throw new InvalidOperationException("缺 300/U1");
+                if (c300u1.Password != "pw300-1")
+                    throw new InvalidOperationException("跨客户端同名账号应各自独立（密码不同）");
+
+                // 唯一键=客户端+账号：同客户端同账号再存 → 覆盖，条数不变，姓名/密码被更新
+                if (!AccountService.Save(vault, new Credential
+                    {
+                        SystemUuid = uuid, Client = "100", User = "U1",
+                        DisplayName = "张三改", Password = "newpw", Remember = true
+                    }, out _))
+                    throw new InvalidOperationException("覆盖保存失败");
+                if (vault.Items.Count(c => c.SystemUuid == uuid) != 8)
+                    throw new InvalidOperationException("同客户端同账号应覆盖而非新增");
+                var changed = vault.GetByUser(uuid, "100", "U1")!;
+                if (changed.DisplayName != "张三改" || changed.Password != "newpw")
+                    throw new InvalidOperationException("覆盖后姓名/密码未更新");
+
+                // 登录前右键分组数据：2 组各 4 条，显示串为「姓名 (账号)」
+                var groups = AccountService.GroupByClient(vault.Items, uuid);
+                if (groups.Count != 2 || groups[0].Accounts.Count != 4 || groups[1].Accounts.Count != 4)
+                    throw new InvalidOperationException("右键分组应为 2 个客户端各 4 条");
+                if (!groups[0].Accounts.Any(a => a.Display == "李四 (U2)"))
+                    throw new InvalidOperationException("显示串应为『姓名 (账号)』");
+
+                sb.AppendLine("      八条(100/300 各 1-4)全部保存；跨客户端同名账号独立；同账号覆盖；分组『姓名 (账号)』正确");
+            }
+            finally
+            {
+                AppPaths.OverrideRoot(original);
+                try { Directory.Delete(sandbox, true); } catch { }
+            }
+        });
+
         // 9. 命令行密码：默认开启 + 一次性迁移 + 尊重用户手动关闭
         // 9. 登录框标题两种格式 + .sap 不携带密码
         Check("登录框标题识别与 .sap 无密码", () =>
