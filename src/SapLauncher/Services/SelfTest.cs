@@ -885,6 +885,16 @@ public static class SelfTest
                     != "SYSD（张三） · ZH")
                     throw new InvalidOperationException("语言为空应按 ZH");
 
+                // 右键账号主项文字不含语言；语言由二级菜单提供（ZH/EN）
+                if (AccountService.FormatEntryLineNoLang(new Credential { Client = "900", User = "SYSD", DisplayName = "Nick", Language = "ZH" })
+                    != "900 · SYSD（Nick）")
+                    throw new InvalidOperationException("主项文字应去掉语言，形如『900 · SYSD（Nick）』");
+                if (AccountService.FormatEntryLineNoLang(new Credential { Client = "800", User = "SYSD", Language = "EN" })
+                    != "800 · SYSD")
+                    throw new InvalidOperationException("无姓名主项应为『800 · SYSD』");
+                if (!AccountService.LoginLanguages.SequenceEqual(new[] { "ZH", "EN" }))
+                    throw new InvalidOperationException("语言二级菜单应为 ZH / EN");
+
                 // 默认登录项（带 Enter）与平铺项去重：同系统+同客户端+同账号视为同一条
                 var defItem = new Credential { SystemUuid = "u", Client = "800", User = "SYSD", DisplayName = "Nick", Language = "ZH", IsDefault = true };
                 if (!AccountService.IsSameAccount(defItem, new Credential { SystemUuid = "u", Client = "800", User = "sysd" }))

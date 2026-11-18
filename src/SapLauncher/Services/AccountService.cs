@@ -40,6 +40,21 @@ public static class AccountService
     }
 
     /// <summary>
+    /// 右键账号项显示文本（不含登录语言）：「客户端 · 账号（姓名）」。
+    /// 语言改由该项的二级子菜单（ZH / EN）选择，避免主项文字过长。
+    /// </summary>
+    public static string FormatEntryLineNoLang(Credential c)
+    {
+        var who = (c.User ?? "").Trim();
+        if (!string.IsNullOrWhiteSpace(c.DisplayName)) who += "（" + c.DisplayName.Trim() + "）";
+        var client = string.IsNullOrWhiteSpace(c.Client) ? "—" : c.Client.Trim();
+        return string.IsNullOrEmpty(who) ? client : client + " · " + who;
+    }
+
+    /// <summary>右键语言子菜单的候选（与编辑器登录语言下拉一致）。</summary>
+    public static readonly string[] LoginLanguages = { "ZH", "EN" };
+
+    /// <summary>
     /// 两条凭据是否指向同一账号（同系统 + 同客户端 + 同账号），用于右键菜单去重：
     /// 默认登录项已经显示的那条，平铺列表里不再重复显示。
     /// </summary>

@@ -766,7 +766,7 @@ public partial class MainWindow : Window
             s.DefaultUser = AppServices.Vault.IsUnlocked ? (AppServices.Vault.GetAny(s.Uuid)?.Display ?? "") : "";
     }
 
-    private async Task LoginAsync(SapSystem system, Credential? chosen = null, bool fromBatch = false)
+    private async Task LoginAsync(SapSystem system, Credential? chosen = null, bool fromBatch = false, string? languageOverride = null)
     {
         if (!fromBatch && system.IsProduction && AppServices.Settings.ConfirmProduction)
         {
@@ -804,8 +804,10 @@ public partial class MainWindow : Window
         }
 
         ShowToast("正在登录 " + system.DisplayName + " …");
+        // 语言优先用右键二级菜单所选；未指定时仍用账号保存的语言（空则 ZH）
+        var loginLang = string.IsNullOrWhiteSpace(languageOverride) ? (cred?.Language ?? "ZH") : languageOverride;
         var result = await AppServices.Launch.LaunchAsync(system, cred, AppServices.Settings, client,
-            cred?.Language ?? "ZH", cred?.LogonGroup, CancellationToken.None,
+            loginLang, cred?.LogonGroup, CancellationToken.None,
             siblings: AppServices.Manifest.Data.Systems);
 
         if (result.Outcome is LaunchOutcome.Success or LaunchOutcome.LaunchedWithoutProof)
@@ -978,8 +980,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 在「登录」项后插入账号菜单。每个凭据平铺为一项，直接显示
-    /// 「客户端 账号（姓名） · 语言」，点选即用该条完整凭据（客户端/账号/密码/语言）登录。
+    /// 在「登录」项后插入账号菜单。每个凭据平铺为一项，显示「客户端 · 账号（姓名）」（不含语言）；
+    /// 鼠标悬停展开二级菜单选择登录语言（ZH / EN），选后用该条完整凭据 + 所选语言登录。
     /// </summary>
     private void BuildAccountMenuItems(SapSystem? system)
     {
@@ -999,24 +1001,28 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 默认登录项（带 Enter）取「最近使用客户端的默认账号」，双击/Enter 行为不变。
-        // 格式与普通项完全一致：客户端（纯数字） · 账号（姓名） · 语言，默认项靠 Enter 字样区分。
+        // 默认登录项（带 Enter）取「最近使用客户端的默认账号」，双击/Enter 行为不变：
+        // 仍按该账号保存的语言登录，只是文字不再显示语言。
         var def = AppServices.Vault.GetAny(system.Uuid) ?? all[0];
-        MenuLogin.Header = AccountService.FormatEntryLine(def);
+        MenuLogin.Header = AccountService.FormatEntryLineNoLang(def);
 
         var insertAt = menu.Items.IndexOf(MenuLogin) + 1;
 
-        // 全部平铺：客户端数值升序、组内默认优先；每项自带客户端/账号/姓名/语言。
+        // 全部平铺：客户端数值升序、组内默认优先；账号文字不含语言，语言放到二级子菜单。
         // 与默认登录项相同的那条跳过，避免同一账号在菜单里重复出现两次。
         foreach (var group in groups)
         {
             foreach (var account in group.Accounts)
             {
                 if (AccountService.IsSameAccount(account, def)) continue;
-                var header = AccountService.FormatEntryLine(account);
-                var item = new MenuItem { Header = header };
+                var item = new MenuItem { Header = AccountService.FormatEntryLineNoLang(account) };
                 var captured = account;
-                item.Click += async (_, _) => await LoginAsync(system, captured);
+                foreach (var lang in AccountService.LoginLanguages)
+                {
+                    var langItem = new MenuItem { Header = lang };
+                    langItem.Click += async (_, _) => await LoginAsync(system, captured, languageOverride: lang);
+                    item.Items.Add(langItem);
+                }
                 menu.Items.Insert(insertAt++, item);
                 _accountMenuItems.Add(item);
             }
