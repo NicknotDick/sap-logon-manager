@@ -1046,12 +1046,13 @@ public partial class MainWindow : Window
     private const double ArrowZoneWidth = 40;
 
     /// <summary>
-    /// 给账号菜单项挂语言二级菜单（悬停自动展开 ZH / EN），并实现「直接点父项主体按配置语言登录」。
+    /// 给账号菜单项挂语言二级菜单（仅当鼠标悬停到右侧箭头区时展开 ZH / EN），
+    /// 并实现「直接点父项主体按配置语言登录」。
     /// WPF 中带子项的 MenuItem 属 Header 角色，鼠标按下任意位置都会展开子菜单而不触发 Click；
     /// 故在 PreviewMouseLeftButtonDown（隧道阶段）拦截：标记 e.Handled 后 WPF 的
     /// OnMouseLeftButtonDown 因 !e.Handled 直接跳过 HandleMouseDown/ClickHeader，子菜单不会闪开。
     /// 点在右侧箭头区（ArrowZoneWidth）则不拦截，交给 WPF 正常展开子菜单。
-    /// <paramref name="hooked"/> 防止同一 MenuItem（默认项常驻）被重复挂接预览事件。
+    /// <paramref name="hooked"/> 防止同一 MenuItem（默认项常驻）被重复挂接事件。
     /// </summary>
     private void AttachLanguageMenu(MenuItem item, SapSystem system, Func<Credential?> accountGetter, ref bool hooked)
     {
@@ -1069,6 +1070,17 @@ public partial class MainWindow : Window
 
         if (hooked) return;
         hooked = true;
+
+        // 语言子菜单仅在鼠标位于右侧箭头区时才允许展开。WPF 对 Header 角色的菜单项
+        // 会在悬停任意位置时自动展开子菜单，这里在 SubmenuOpened 里校验鼠标横向位置：
+        // 不在箭头区（ArrowZoneWidth）则同步收回 —— Popup 尚未渲染，不会出现闪烁。
+        item.SubmenuOpened += (_, _) =>
+        {
+            var pos = Mouse.GetPosition(item);
+            if (item.ActualWidth <= 0 || pos.X < item.ActualWidth - ArrowZoneWidth)
+                item.IsSubmenuOpen = false;
+        };
+
         item.PreviewMouseLeftButtonDown += (_, e) =>
         {
             if (e.Handled) return;
