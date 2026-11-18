@@ -445,11 +445,13 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
-                                    <!-- 箭头列 Auto + 固定 26px 内容：有子项时占 26px，无子项时折叠为 0。
-                                         命中区 = 26(列) + 12(右 padding) + 2(右 margin) = 40px，见 MainWindow.ArrowZoneWidth -->
+                                    <!-- 箭头列 Auto：有子项时占 26px，无子项时折叠为 0。
+                                         语言菜单命中区 = HeaderPresenter（账号文字）右方的整个区域，
+                                         由 MainWindow.IsInLanguageZone 动态计算（回退：右侧 140px） -->
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <ContentPresenter Grid.Column="0" ContentSource="Header" VerticalAlignment="Center" />
+                                <ContentPresenter x:Name="HeaderPresenter" Grid.Column="0" ContentSource="Header"
+                                                  HorizontalAlignment="Left" VerticalAlignment="Center" />
                                 <TextBlock Grid.Column="1" Text="{TemplateBinding InputGestureText}"
                                            Foreground="{DynamicResource Brush.TextMuted}" FontSize="11" Margin="20,0,0,0"
                                            VerticalAlignment="Center" />

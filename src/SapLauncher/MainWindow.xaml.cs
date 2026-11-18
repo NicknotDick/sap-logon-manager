@@ -1040,18 +1040,36 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 右侧箭头命中区宽度（px）：模板中箭头列 26 + 右内边距 12 + 右外边距 2。
-    /// 点在这个区域内交给 WPF 展开语言子菜单，其余区域视为「直接登录」。
+    /// 语言菜单命中区回退宽度（DIP）：模板未就绪时按右侧固定 140 计算。
     /// </summary>
-    private const double ArrowZoneWidth = 40;
+    private const double ArrowZoneWidth = 140;
 
     /// <summary>
-    /// 给账号菜单项挂语言二级菜单（仅当鼠标悬停到右侧箭头区时展开 ZH / EN），
-    /// 并实现「直接点父项主体按配置语言登录」。
+    /// 判断横向位置是否落在语言菜单命中区：账号文字（HeaderPresenter）右方的整个区域，
+    /// 含快捷键文字、空白与箭头列。通过模板元素的实际位置动态计算，
+    /// 模板未应用或视觉树未就绪时回退为右侧固定 ArrowZoneWidth。
+    /// </summary>
+    private bool IsInLanguageZone(MenuItem item, double x)
+    {
+        double start = item.ActualWidth - ArrowZoneWidth;
+        if (item.Template?.FindName("HeaderPresenter", item) is FrameworkElement fe)
+        {
+            try
+            {
+                start = fe.TransformToAncestor(item).Transform(new Point(0, 0)).X + fe.ActualWidth;
+            }
+            catch { /* 视觉树未就绪，用回退值 */ }
+        }
+        return x >= start;
+    }
+
+    /// <summary>
+    /// 给账号菜单项挂语言二级菜单（仅当鼠标悬停到账号文字右方的命中区时展开 ZH / EN），
+    /// 并实现「直接点账号文字按配置语言登录」。
     /// WPF 中带子项的 MenuItem 属 Header 角色，鼠标按下任意位置都会展开子菜单而不触发 Click；
     /// 故在 PreviewMouseLeftButtonDown（隧道阶段）拦截：标记 e.Handled 后 WPF 的
     /// OnMouseLeftButtonDown 因 !e.Handled 直接跳过 HandleMouseDown/ClickHeader，子菜单不会闪开。
-    /// 点在右侧箭头区（ArrowZoneWidth）则不拦截，交给 WPF 正常展开子菜单。
+    /// 点在文字右方命中区（IsInLanguageZone）则不拦截，交给 WPF 正常展开子菜单。
     /// <paramref name="hooked"/> 防止同一 MenuItem（默认项常驻）被重复挂接事件。
     /// </summary>
     private void AttachLanguageMenu(MenuItem item, SapSystem system, Func<Credential?> accountGetter, ref bool hooked)
@@ -1071,13 +1089,13 @@ public partial class MainWindow : Window
         if (hooked) return;
         hooked = true;
 
-        // 语言子菜单仅在鼠标位于右侧箭头区时才允许展开。WPF 对 Header 角色的菜单项
-        // 会在悬停任意位置时自动展开子菜单，这里在 SubmenuOpened 里校验鼠标横向位置：
-        // 不在箭头区（ArrowZoneWidth）则同步收回 —— Popup 尚未渲染，不会出现闪烁。
+        // 语言子菜单仅在鼠标位于账号文字右方的命中区时才允许展开。WPF 对 Header 角色的
+        // 菜单项会在悬停任意位置时自动展开子菜单，这里在 SubmenuOpened 里校验鼠标横向位置：
+        // 不在命中区则同步收回 —— Popup 尚未渲染，不会出现闪烁。
         item.SubmenuOpened += (_, _) =>
         {
             var pos = Mouse.GetPosition(item);
-            if (item.ActualWidth <= 0 || pos.X < item.ActualWidth - ArrowZoneWidth)
+            if (item.ActualWidth <= 0 || !IsInLanguageZone(item, pos.X))
                 item.IsSubmenuOpen = false;
         };
 
@@ -1085,7 +1103,7 @@ public partial class MainWindow : Window
         {
             if (e.Handled) return;
             var pos = e.GetPosition(item);
-            if (item.ActualWidth > 0 && pos.X >= item.ActualWidth - ArrowZoneWidth) return; // 箭头区：让子菜单展开
+            if (item.ActualWidth > 0 && IsInLanguageZone(item, pos.X)) return; // 命中区：让子菜单展开
             var a = accountGetter();
             var s = Current; // 事件只挂一次，须在触发时读取当前连接，避免闭包捕获过期 system
             if (a is null || s is null) return; // 无账号时保留 MenuLogin 原 Click 行为（弹编辑框）
