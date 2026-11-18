@@ -220,9 +220,11 @@ public static class ExportImportService
         int count = 0;
         foreach (var c in payload.Items)
         {
-            vault.Upsert(c);
+            // 批量导入只改内存，末尾统一落盘一次，避免 N 条账号触发 N 次整库加密写盘
+            vault.Upsert(c, persist: false);
             count++;
         }
+        if (count > 0) vault.Save();
         return count;
     }
 

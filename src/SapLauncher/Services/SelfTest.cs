@@ -663,8 +663,8 @@ public static class SelfTest
             sb.AppendLine("      标题解析 7 例、目标匹配 4 例、额度规则均正确；单次上限=1");
         });
 
-        // 9. 多账号规则：上限 8、默认账号、改名/删除差异同步
-        Check("多账号规则（上限8/默认/改名/删除）", () =>
+        // 9. 多账号规则：不限数量、默认账号、改名/删除差异同步、批量落盘
+        Check("多账号规则（不限数量/默认/改名/删除/批量落盘）", () =>
         {
             var original = AppPaths.Root;
             var sandbox = Path.Combine(original, "selftest-accounts");
@@ -684,14 +684,16 @@ public static class SelfTest
                 if (vault.Get(uuid, client)?.User != "U01" || !vault.Get(uuid, client)!.IsDefault)
                     throw new InvalidOperationException("首个账号应自动成为默认");
 
-                // b) 上限 8
-                for (int i = 2; i <= 8; i++)
-                    AccountService.Save(vault, new Credential { SystemUuid = uuid, Client = client, User = "U0" + i }, out _);
-                if (AccountService.Count(vault, uuid, client) != 8)
-                    throw new InvalidOperationException("账号数应为 8");
-                if (AccountService.Save(vault, new Credential { SystemUuid = uuid, Client = client, User = "U09" }, out var eLimit))
-                    throw new InvalidOperationException("第 9 个账号应被拒绝");
-                if (string.IsNullOrEmpty(eLimit)) throw new InvalidOperationException("拒绝时应给出原因");
+                // b) 账号数量不设上限：连存 12 个（含原会被拒绝的第 9 个）全部成功
+                for (int i = 2; i <= 12; i++)
+                {
+                    if (!AccountService.Save(vault,
+                            new Credential { SystemUuid = uuid, Client = client, User = "U" + i.ToString("00") },
+                            out var eAdd))
+                        throw new InvalidOperationException($"第 {i} 个账号不应被拒绝：{eAdd}");
+                }
+                if (AccountService.Count(vault, uuid, client) != 12)
+                    throw new InvalidOperationException("账号数应为 12");
 
                 // c) 设为默认
                 AccountService.SetDefault(vault, uuid, client, "U05");
@@ -702,7 +704,7 @@ public static class SelfTest
                 AccountService.Delete(vault, uuid, client, "U05");
                 if (vault.Get(uuid, client)?.User == "U05") throw new InvalidOperationException("默认账号删除后应换人");
                 if (vault.Items.Count(c => c.IsDefault) != 1) throw new InvalidOperationException("提升后默认账号应唯一");
-                if (AccountService.Count(vault, uuid, client) != 7) throw new InvalidOperationException("删除后应为 7 个");
+                if (AccountService.Count(vault, uuid, client) != 11) throw new InvalidOperationException("删除后应为 11 个");
 
                 // e) 改名：旧名不在新集合中 → 删旧建新，数量不变
                 var work = vault.GetAll(uuid, client).Select(c => new Credential
@@ -718,7 +720,7 @@ public static class SelfTest
                     AccountService.Delete(vault, uuid, client, old.User);
                 foreach (var a in work) AccountService.Save(vault, a, out _);
 
-                if (AccountService.Count(vault, uuid, client) != 7)
+                if (AccountService.Count(vault, uuid, client) != 11)
                     throw new InvalidOperationException("改名后数量应不变");
                 if (vault.GetByUser(uuid, client, "RENAMED") is null)
                     throw new InvalidOperationException("改名后新账号应存在");
@@ -728,13 +730,75 @@ public static class SelfTest
                 var ordered = vault.GetAll(uuid, client);
                 if (!ordered.First().IsDefault) throw new InvalidOperationException("GetAll 应把默认账号排在前面");
 
-                sb.AppendLine($"      \u4e0a\u96508\u62d2\u7b2c9\u3001\u9ed8\u8ba4\u5207\u6362\u3001\u5220\u9ed8\u8ba4\u81ea\u52a8\u63d0\u5347\u3001\u6539\u540d\u5dee\u5f02\u540c\u6b65\u5747\u6b63\u786e");
+                // g) 批量落盘：persist=false 连写多条后只 Save 一次，重新解锁数据完整
+                foreach (var bulkUser in new[] { "B1", "B2", "B3" })
+                {
+                    if (!AccountService.Save(vault,
+                            new Credential { SystemUuid = uuid, Client = "800", User = bulkUser },
+                            out _, persist: false))
+                        throw new InvalidOperationException("批量写入不应失败");
+                }
+                vault.Save();
+                var reopened = new VaultService();
+                if (!reopened.Unlock("multi-account-test", out var eReopen))
+                    throw new InvalidOperationException("批量落盘后无法解锁：" + eReopen);
+                if (AccountService.Count(reopened, uuid, "800") != 3)
+                    throw new InvalidOperationException("批量落盘后账号应完整保存");
+
+                sb.AppendLine("      不限数量（12 个全部成功）、默认切换、删默认自动提升、改名差异同步、批量落盘均正确");
             }
             finally
             {
                 AppPaths.OverrideRoot(original);
                 try { Directory.Delete(sandbox, true); } catch { }
             }
+        });
+
+        // 9b. 多客户端矩阵：同一系统多个客户端 × 多个账号（右键菜单分组的数据来源）
+        Check("多客户端矩阵 / 按客户端分组", () =>
+        {
+            const string uuid = "sys-matrix";
+            var items = new List<Credential>();
+            var matrix = new (string Client, string[] Users)[]
+            {
+                ("100", new[] { "U1", "U2", "U3", "U4" }),
+                ("300", new[] { "U1", "U2", "U3", "U4" }),
+                ("500", new[] { "U1", "U2" })
+            };
+            foreach (var row in matrix)
+            {
+                foreach (var u in row.Users)
+                {
+                    items.Add(new Credential
+                    {
+                        SystemUuid = uuid, Client = row.Client, User = u,
+                        UpdatedAt = DateTime.Now.AddMinutes(-items.Count)
+                    });
+                }
+            }
+
+            // 每个客户端各有自己的默认账号
+            items.First(c => c.Client == "100" && c.User == "U2").IsDefault = true;
+            items.First(c => c.Client == "300" && c.User == "U4").IsDefault = true;
+            items.First(c => c.Client == "500" && c.User == "U1").IsDefault = true;
+
+            var groups = AccountService.GroupByClient(items, uuid);
+            if (groups.Count != 3) throw new InvalidOperationException("应分出 3 个客户端组");
+            if (groups[0].Client != "100" || groups[1].Client != "300" || groups[2].Client != "500")
+                throw new InvalidOperationException("客户端应按数值升序");
+            if (groups[0].Accounts.Count != 4 || groups[1].Accounts.Count != 4 || groups[2].Accounts.Count != 2)
+                throw new InvalidOperationException("各组账号数不正确");
+            if (!groups[0].Accounts[0].IsDefault || groups[0].Accounts[0].User != "U2")
+                throw new InvalidOperationException("组内默认账号应排在最前");
+
+            // 跨客户端同名账号是彼此独立的凭据
+            if (items.Count(c => c.User == "U1") != 3)
+                throw new InvalidOperationException("跨客户端同名账号应各自独立");
+
+            // 其它系统的凭据不得混入
+            items.Add(new Credential { SystemUuid = "other-system", Client = "900", User = "X1" });
+            if (AccountService.GroupByClient(items, uuid).Count != 3)
+                throw new InvalidOperationException("不应混入其它系统");
         });
 
         // 9. 命令行密码：默认开启 + 一次性迁移 + 尊重用户手动关闭
@@ -1206,10 +1270,30 @@ public static class SelfTest
             AppServices.Vault.Initialize("shot-only");
 
             var sys = new SapSystem { Uuid = "shot-sys", Name = "演示系统A", Sid = "DQ1", LastClient = "300" };
-            AppServices.Vault.Upsert(new Credential { SystemUuid = sys.Uuid, Client = "300", User = "SV01", Password = "x", Remember = true });
-            AppServices.Vault.Upsert(new Credential { SystemUuid = sys.Uuid, Client = "300", User = "JT_SD1", Password = "x", Remember = true, IsDefault = true });
-            AppServices.Vault.Upsert(new Credential { SystemUuid = sys.Uuid, Client = "300", User = "SD02", Password = "x", Remember = true });
-            sys.DefaultUser = "JT_SD1";
+
+            // 演示「同一连接 × 多客户端 × 多账号」矩阵，账号名全部为虚构 DEMO 数据
+            var demoGroups = new (string Client, string[] Users)[]
+            {
+                ("100", new[] { "DEMO_USER_A", "DEMO_USER_B", "DEMO_USER_C" }),
+                ("300", new[] { "DEMO_USER_D", "DEMO_USER_E", "DEMO_USER_F", "DEMO_USER_G" }),
+                ("500", new[] { "DEMO_USER_H", "DEMO_USER_I" })
+            };
+            foreach (var row in demoGroups)
+            {
+                for (int i = 0; i < row.Users.Length; i++)
+                {
+                    AppServices.Vault.Upsert(new Credential
+                    {
+                        SystemUuid = sys.Uuid,
+                        Client = row.Client,
+                        User = row.Users[i],
+                        Password = "x",
+                        Remember = true,
+                        IsDefault = i == 0
+                    });
+                }
+            }
+            sys.DefaultUser = "DEMO_USER_D";
 
             Shot("editor-multi", () => new Views.EntryEditorWindow(sys, AppServices.Vault.Get("shot-sys", "300")), 720);
         }

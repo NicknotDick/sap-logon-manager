@@ -976,7 +976,10 @@ public partial class MainWindow : Window
         BuildAccountMenuItems(Current);
     }
 
-    /// <summary>在「登录」项后插入「以 XX 登录」，多账号时才出现；默认账号带标注。</summary>
+    /// <summary>
+    /// 在「登录」项后插入账号菜单。单客户端时平铺账号；多客户端时按
+    /// 「客户端 → 账号」二级菜单展开，可直接选任意客户端下的任意账号登录。
+    /// </summary>
     private void BuildAccountMenuItems(SapSystem? system)
     {
         var menu = SystemList.ContextMenu;
@@ -987,31 +990,49 @@ public partial class MainWindow : Window
 
         if (system is null || !AppServices.Vault.IsUnlocked) return;
 
-        var client = ResolveClientFor(system);
-        var accounts = AppServices.Vault.GetAll(system.Uuid, client);
-        if (accounts.Count <= 1)
+        var groups = AccountService.GroupByClient(AppServices.Vault.Items, system.Uuid);
+        var all = groups.SelectMany(g => g.Accounts).ToList();
+        if (all.Count == 0)
         {
-            // 单账号时把默认账号名体现在「登录」标题上
-            var only = accounts.FirstOrDefault();
-            MenuLogin.Header = only is null
-                ? Localizer.Get("Ctx.Login")
-                : string.Format(Localizer.Get("Ctx.LoginDefault"), only.Display);
+            MenuLogin.Header = Localizer.Get("Ctx.Login");
             return;
         }
 
-        MenuLogin.Header = string.Format(Localizer.Get("Ctx.LoginDefault"),
-            accounts.FirstOrDefault(a => a.IsDefault)?.Display ?? accounts[0].Display);
+        // 默认登录项仍取「最近使用客户端的默认账号」，双击行为保持不变
+        var def = AppServices.Vault.GetAny(system.Uuid) ?? all[0];
+        MenuLogin.Header = string.Format(Localizer.Get("Ctx.LoginDefault"), def.Display);
 
         var insertAt = menu.Items.IndexOf(MenuLogin) + 1;
-        foreach (var account in accounts)
+        bool grouped = groups.Count > 1;
+
+        foreach (var group in groups)
         {
-            var header = string.Format(Localizer.Get("Ctx.LoginAs"), account.Display) +
-                         (account.IsDefault ? Localizer.Get("Ctx.DefaultSuffix") : "");
-            var item = new MenuItem { Header = header };
-            var captured = account;
-            item.Click += async (_, _) => await LoginAsync(system, captured);
-            menu.Items.Insert(insertAt++, item);
-            _accountMenuItems.Add(item);
+            MenuItem? parent = null;
+            if (grouped)
+            {
+                parent = new MenuItem
+                {
+                    Header = string.Format(Localizer.Get("Ctx.ClientGroup"),
+                        string.IsNullOrWhiteSpace(group.Client) ? "—" : group.Client)
+                };
+                menu.Items.Insert(insertAt++, parent);
+                _accountMenuItems.Add(parent);
+            }
+
+            foreach (var account in group.Accounts)
+            {
+                var header = string.Format(Localizer.Get("Ctx.LoginAs"), account.Display) +
+                             (account.IsDefault ? Localizer.Get("Ctx.DefaultSuffix") : "");
+                var item = new MenuItem { Header = header };
+                var captured = account;
+                item.Click += async (_, _) => await LoginAsync(system, captured);
+                if (parent is not null) parent.Items.Add(item);
+                else
+                {
+                    menu.Items.Insert(insertAt++, item);
+                    _accountMenuItems.Add(item);
+                }
+            }
         }
     }
 

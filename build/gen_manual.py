@@ -115,8 +115,8 @@ p("操作使用手册  |  User Manual", font_size=17, alignment="center", space_
 p("中英双语版 · Chinese-English Bilingual Edition",
   font_size=11, alignment="center", font_color=GREY, space_after=18)
 kv([
-    ("软件版本 / Version", "GURURU202611102025"),
-    ("发行版本 / Release", "v1.6.1"),
+    ("软件版本 / Version", "GURURU202611181112"),
+    ("发行版本 / Release", "v1.6.3"),
     ("文档日期 / Date", "2026-11-10"),
     ("适用平台 / Platform", "Windows 10 / 11（64 位）/ 64-bit"),
     ("SAP 客户端 / SAP GUI", "7.40 及以上（已在 8.0 实测）/ 7.40 or later (verified on 8.0)"),
@@ -301,19 +301,22 @@ fig("batch.png", "批量登录窗口：执行前结果列表为空，开始后�
 # ============================== 7. 凭据与账号管理 ==============================
 h1("7. 凭据与账号管理", "7. Credentials & Account Management")
 
-h2("7.1 多账号（每客户端上限 8 个）", "7.1 Multiple Accounts (up to 8 per client)")
-zh("同一「系统 + 客户端」下最多可保存 8 个账号，适合多人共用一台机器、或一人在多个客户端有不同账号的场景。"
-   "右键连接 →「编辑凭据…」进行管理；第一个保存的账号自动成为默认账号。")
-en("Up to 8 accounts can be stored per system-and-client pair — useful for shared machines or multiple "
-   "clients. Manage them via right-click → “Edit Credentials…”. The first saved account becomes the default.")
+h2("7.1 多客户端 × 多账号（数量不限）", "7.1 Multiple Clients & Accounts (No Limit)")
+zh("同一个连接下可保存任意多个客户端，每个客户端下又可保存任意多个账号，账号总数不设上限。"
+   "例如客户端 100 存账号 1~4、客户端 300 存账号 1~4、客户端 500 存账号 1~2，凭据彼此独立（同名账号在不同客户端也互不冲突）。"
+   "右键连接 →「编辑凭据…」管理；每个客户端的第一个账号自动成为该客户端的默认账号。")
+en("Any number of clients can be stored under one connection, and any number of accounts under each client — "
+   "there is no cap on the total. For example, client 100 with accounts 1–4, client 300 with accounts 1–4 and "
+   "client 500 with accounts 1–2 are all independent (even identically named accounts stay separate across clients). "
+   "Manage them via right-click → “Edit Credentials…”. The first account on each client becomes that client's default.")
 kv([
-    ("新增账号 / Add", "点「新增账号」，填写账号（可绑定姓名）与密码后保存 / Click “Add account”, fill in account (optionally a display name) and password"),
-    ("设为默认 / Set default", "选中账号点「设为默认」，同客户端其它账号自动取消默认 / Select an account and click “Set default”; other accounts on the same client are deselected"),
-    ("删除账号 / Delete", "删除的是默认账号时，自动把剩余账号提升一个为默认，不会出现无默认状态 / When the default is deleted, the next remaining account is promoted automatically"),
-    ("切换客户端 / Switch client", "客户端下拉一改，账号列表随之切换（每个客户端各自最多 8 个）/ The account list follows the selected client (8 per client)"),
-    ("达到上限 / Limit reached", "第 9 个账号会被拒绝并提示，需先删除不用的账号 / A 9th account is rejected with a prompt"),
+    ("新增账号 / Add", "点「新增账号」，填写账号（可绑定姓名）与密码后保存；不限制数量 / Click “Add account”, fill in account (optionally a display name) and password; no limit"),
+    ("设为默认 / Set default", "选中账号点「设为默认」，同客户端其它账号自动取消默认；各客户端各有一个默认 / Select an account and click “Set default”; each client keeps its own default"),
+    ("删除账号 / Delete", "删除的是默认账号时，自动把剩余账号提升一个为默认 / When the default is deleted, the next remaining account is promoted automatically"),
+    ("切换客户端 / Switch client", "客户端下拉列出该连接已保存过的全部客户端，也可直接输入新客户端号；切换时未保存的编辑不会丢失 / The client drop-down lists every stored client and accepts new values; unsaved edits survive switching"),
+    ("保存 / Save", "一次保存同步所有已切换过的客户端，整库只加密写盘一次 / One save synchronises every touched client and writes the encrypted vault once"),
 ], key_width=140)
-fig("editor-multi.png", "连接属性中的多账号列表与「设为默认」（示例账号）", "Multiple accounts in connection properties, with “Set default” (demo accounts)", 300)
+fig("editor-multi.png", "多账号列表、不限数量提示与本系统客户端概览（示例账号）", "Multiple accounts, the “no limit” counter and the client overview (demo accounts)", 300)
 
 h2("7.2 账号姓名字段", "7.2 Display Name")
 zh("账号可绑定「姓名（可选）」。保存后，登录菜单、主列表「上次登录」等处统一显示为「姓名 (账号)」"
@@ -321,10 +324,11 @@ zh("账号可绑定「姓名（可选）」。保存后，登录菜单、主列�
 en("An optional display name can be bound to each account. Wherever the account appears (logon menu, "
    "“last logon” column, etc.) it renders as “Name (Account)”, or just the account when no name is set.")
 
-h2("7.3 登录时选账号", "7.3 Choosing an Account at Logon")
+h2("7.3 登录时选客户端与账号", "7.3 Choosing a Client & Account at Logon")
 ul([
     "右键连接，菜单显示「登录（默认 XX）」与各账号的「以 XX 登录」子项。/ Right-click a connection: “Log on (default XX)” plus one entry per account.",
-    "双击行或点「登录」→ 使用默认账号。/ Double-click or “Log on” uses the default account.",
+    "该连接存有多个客户端时，账号按「客户端 100 / 客户端 300 / …」二级菜单分组，可直接选任意客户端下的任意账号登录，无需先切编辑器。/ With several clients, accounts are grouped into “Client 100 / Client 300 / …” sub-menus, so any account on any client can be chosen directly without switching clients in the editor first.",
+    "双击行或点「登录」→ 使用默认账号（仍是最近使用客户端的默认账号）。/ Double-click or “Log on” uses the default account (the default of the most recently used client).",
     "点「以 XX 登录」→ 使用指定账号。/ “Log on as XX” uses that specific account.",
     "批量登录始终使用各系统的默认账号。/ Batch logon always uses each system's default account.",
 ])
@@ -562,7 +566,7 @@ en("Requires the .NET 8 SDK. Run the command above in the project root; output g
    "dist\\SAP登录管理器.exe (self-contained single file with native libraries alongside). Alternatively, "
    "double-click “一键打包.bat” for a one-shot clean build.")
 hr()
-p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611102025",
+p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611181112",
   font_size=9, alignment="center", font_color="#888888")
 
 # ============================== 输出配置 ==============================

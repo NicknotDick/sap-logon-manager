@@ -45,6 +45,7 @@
     <sys:String x:Key="Row.Never">从未</sys:String>
 
     <sys:String x:Key="Ctx.LoginAs">以 {0} 登录</sys:String>
+    <sys:String x:Key="Ctx.ClientGroup">客户端 {0}</sys:String>
     <sys:String x:Key="Ctx.DefaultSuffix">（默认）</sys:String>
     <sys:String x:Key="Ctx.LoginDefault">登录（默认 {0}）</sys:String>
     <sys:String x:Key="Ctx.Login">登录</sys:String>
@@ -118,9 +119,10 @@
     <sys:String x:Key="Editor.DefaultAccount">默认</sys:String>
     <sys:String x:Key="Editor.SetDefault">设为默认</sys:String>
     <sys:String x:Key="Editor.DeleteAccount">删除账号</sys:String>
-    <sys:String x:Key="Editor.AccountCount">已保存账号 {0}/{1}</sys:String>
+    <sys:String x:Key="Editor.AccountCount">已保存账号 {0} 个（不限数量）</sys:String>
+    <sys:String x:Key="Editor.ClientsSaved">本系统客户端：</sys:String>
     <sys:String x:Key="Editor.AccountEmpty">还没有保存账号，填写下方信息后保存</sys:String>
-    <sys:String x:Key="Editor.AccountLimit">该客户端最多保存 {0} 个账号</sys:String>
+    <sys:String x:Key="Editor.AccountLimit">账号数量不设上限</sys:String>
     <sys:String x:Key="Editor.AccaultDup">该账号已存在</sys:String>
     <sys:String x:Key="Editor.UserRequired">账号不能为空</sys:String>
     <sys:String x:Key="Editor.DeleteAccountConfirm">确认删除账号 {0}？</sys:String>

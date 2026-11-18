@@ -45,6 +45,7 @@
     <sys:String x:Key="Row.Never">Never</sys:String>
 
     <sys:String x:Key="Ctx.LoginAs">Log on as {0}</sys:String>
+    <sys:String x:Key="Ctx.ClientGroup">Client {0}</sys:String>
     <sys:String x:Key="Ctx.DefaultSuffix"> (default)</sys:String>
     <sys:String x:Key="Ctx.LoginDefault">Log on (default {0})</sys:String>
     <sys:String x:Key="Ctx.Login">Log on</sys:String>
@@ -118,9 +119,10 @@
     <sys:String x:Key="Editor.DefaultAccount">Default</sys:String>
     <sys:String x:Key="Editor.SetDefault">Set as default</sys:String>
     <sys:String x:Key="Editor.DeleteAccount">Delete account</sys:String>
-    <sys:String x:Key="Editor.AccountCount">Saved accounts {0}/{1}</sys:String>
+    <sys:String x:Key="Editor.AccountCount">Saved accounts: {0} (no limit)</sys:String>
+    <sys:String x:Key="Editor.ClientsSaved">Clients: </sys:String>
     <sys:String x:Key="Editor.AccountEmpty">No account yet. Fill in the fields below and save.</sys:String>
-    <sys:String x:Key="Editor.AccountLimit">Up to {0} accounts per client</sys:String>
+    <sys:String x:Key="Editor.AccountLimit">No limit on the number of accounts</sys:String>
     <sys:String x:Key="Editor.AccaultDup">This account already exists</sys:String>
     <sys:String x:Key="Editor.UserRequired">User is required</sys:String>
     <sys:String x:Key="Editor.DeleteAccountConfirm">Delete account {0}?</sys:String>

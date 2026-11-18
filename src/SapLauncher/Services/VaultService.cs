@@ -161,7 +161,11 @@ public sealed class VaultService
 
     public string GetDefaultUser(string uuid) => GetAny(uuid)?.User ?? "";
 
-    public void Upsert(Credential credential)
+    /// <summary>
+    /// 新增或覆盖一条凭据。persist=false 时只改内存，不写盘 ——
+    /// 批量保存（编辑器/导入）应在末尾调用一次 Save()，避免每条账号都整库加密写一次。
+    /// </summary>
+    public void Upsert(Credential credential, bool persist = true)
     {
         credential.UpdatedAt = DateTime.Now;
         var idx = _items.FindIndex(c => c.SystemUuid == credential.SystemUuid &&
@@ -169,16 +173,16 @@ public sealed class VaultService
                                         string.Equals(c.User, credential.User, StringComparison.OrdinalIgnoreCase));
         if (idx >= 0) _items[idx] = credential;
         else _items.Add(credential);
-        Save();
+        if (persist) Save();
     }
 
     /// <summary>删除单个账号。</summary>
-    public void RemoveAccount(string uuid, string client, string user)
+    public void RemoveAccount(string uuid, string client, string user, bool persist = true)
     {
         _items.RemoveAll(c => c.SystemUuid == uuid &&
                               string.Equals(c.Client, client, StringComparison.Ordinal) &&
                               string.Equals(c.User, user, StringComparison.OrdinalIgnoreCase));
-        Save();
+        if (persist) Save();
     }
 
     public void Remove(string uuid)

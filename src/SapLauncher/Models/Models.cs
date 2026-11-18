@@ -171,7 +171,7 @@ public class SapSystem : ObservableObject
 }
 
 /// <summary>凭据（仅存在于加密库中）。</summary>
-/// <summary>凭据（仅存在于加密库中）。同一「系统 + 客户端」可保存多个账号，上限 8 个。</summary>
+/// <summary>凭据（仅存在于加密库中）。同一「系统 + 客户端」可保存任意多个账号，客户端数量亦不设上限。</summary>
 public class Credential
 {
     public string SystemUuid { get; set; } = "";

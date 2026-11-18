@@ -12,8 +12,14 @@ public partial class EntryEditorWindow : Window
     private readonly bool _credentialOnly;
     private readonly List<string> _clients = new();
 
-    /// <summary>当前客户端的账号工作副本（加载时克隆，保存时按账号名集合差异同步）。</summary>
-    private readonly List<Credential> _accounts = new();
+    /// <summary>本系统在凭据库中已保存过的客户端号（下拉候选与界面概览）。</summary>
+    private readonly List<string> _savedClients = new();
+
+    /// <summary>各客户端的账号工作副本。切换客户端不再丢弃未保存的编辑。</summary>
+    private readonly Dictionary<string, List<Credential>> _byClient = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>当前客户端的工作副本，始终指向 _byClient[_currentClient]。</summary>
+    private List<Credential> _accounts = new();
     private Credential? _selectedAccount;
     private string _currentClient = "";
     private bool _syncing;
@@ -42,9 +48,19 @@ public partial class EntryEditorWindow : Window
             : system is null ? Localizer.Get("Editor.NewTitle") : Localizer.Get("Editor.Title");
         Title = TitleText.Text;
 
-        // 客户端候选
+        // 客户端候选：已保存过的客户端排在最前，再补常用客户端号
+        if (AppServices.Vault.IsUnlocked)
+        {
+            _savedClients.AddRange(AppServices.Vault.Items
+                .Where(c => c.SystemUuid == _system.Uuid && !string.IsNullOrWhiteSpace(c.Client))
+                .Select(c => c.Client)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(c => int.TryParse(c, out var n) ? n : int.MaxValue)
+                .ThenBy(c => c, StringComparer.OrdinalIgnoreCase));
+            _clients.AddRange(_savedClients);
+        }
         foreach (var c in new[] { "100", "200", "300", "400", "500", "600", "700", "800", "900" })
-            _clients.Add(c);
+            if (!_clients.Contains(c)) _clients.Add(c);
         if (!string.IsNullOrWhiteSpace(_system.LastClient) && !_clients.Contains(_system.LastClient))
             _clients.Insert(0, _system.LastClient);
         if (credential is not null && !string.IsNullOrWhiteSpace(credential.Client) && !_clients.Contains(credential.Client))
@@ -93,15 +109,21 @@ public partial class EntryEditorWindow : Window
 
     private void LoadAccounts(string client)
     {
+        // 先把界面字段写回当前客户端的工作副本；副本留在 _byClient 中，切换不会丢改动
         CommitFields();
-        _currentClient = client;
-        _accounts.Clear();
 
-        if (AppServices.Vault.IsUnlocked)
+        if (!_byClient.TryGetValue(client, out var list))
         {
-            foreach (var c in AppServices.Vault.GetAll(_system.Uuid, client))
-                _accounts.Add(c.Clone());
+            list = AppServices.Vault.IsUnlocked
+                ? AppServices.Vault.GetAll(_system.Uuid, client).Select(c => c.Clone()).ToList()
+                : new List<Credential>();
+            _byClient[client] = list;
         }
+        if (!_savedClients.Contains(client)) _savedClients.Add(client);
+
+        _currentClient = client;
+        _accounts = list;
+        _selectedAccount = null;   // 切换后必须先断开，避免字段写回串到旧客户端的账号对象
 
         // 选中传入的账号，否则默认账号，否则第一个
         var prefer = _credential is not null && string.Equals(_credential.Client, client, StringComparison.Ordinal)
@@ -129,8 +151,15 @@ public partial class EntryEditorWindow : Window
         _selectedAccount = target;
         if (target is not null) AccountList.SelectedItem = target;
 
-        AccountCountText.Text = string.Format(Localizer.Get("Editor.AccountCount"),
-            _accounts.Count, AccountService.MaxAccountsPerClient);
+        // 账号数量不设上限；附带本系统已保存的客户端概览，便于多客户端管理
+        var clients = _savedClients
+            .OrderBy(c => int.TryParse(c, out var n) ? n : int.MaxValue)
+            .ThenBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var overview = clients.Count > 0
+            ? "   ·   " + Localizer.Get("Editor.ClientsSaved") + string.Join(" / ", clients)
+            : "";
+        AccountCountText.Text = string.Format(Localizer.Get("Editor.AccountCount"), _accounts.Count) + overview;
 
         LoadFields(target);
         UpdateAccountButtons();
@@ -259,11 +288,7 @@ public partial class EntryEditorWindow : Window
         }
 
         CommitFields();
-        if (!AccountService.CanAdd(AppServices.Vault, _system.Uuid, _currentClient, out var error))
-        {
-            ShowError(error);
-            return;
-        }
+        // 账号数量不设上限，新增不再做计数拦截
 
         var account = new Credential
         {
@@ -527,7 +552,8 @@ public partial class EntryEditorWindow : Window
 
         // 同名合并必须发生在差异同步之前：否则重复条目会先后 Upsert，
         // 空姓名条目覆盖有效姓名（实测导致「姓名无法修改保存」）。
-        MergeDuplicateAccounts(_accounts);
+        // 所有已切换过的客户端副本都要合并，不能只处理当前客户端。
+        foreach (var group in _byClient.Values) MergeDuplicateAccounts(group);
 
         // 合并可能移除了当前选中的重复条目，重定向到保留的同名条目
         if (_selectedAccount is not null && !_accounts.Contains(_selectedAccount))
@@ -555,39 +581,59 @@ public partial class EntryEditorWindow : Window
         // 客户端选择立即写回清单，即使尚未保存凭据也能在列表显示
         _system.LastClient = client;
 
+        // 防御：用户直接键入新客户端号却未触发失焦时，把当前工作副本整体归到该客户端。
+        // 旧客户端库中已存的账号不会在此删除（视为复制到新客户端），需显式删除才移除。
+        if (!string.Equals(client, _currentClient, StringComparison.OrdinalIgnoreCase))
+        {
+            var previous = _currentClient;
+            _byClient.Remove(previous);
+            foreach (var a in _accounts) a.Client = client;
+            _byClient[client] = _accounts;
+            _currentClient = client;
+            if (!_savedClients.Contains(client)) _savedClients.Add(client);
+            Log.Info($"保存：工作副本客户端由 {previous} 归到 {client}");
+        }
+
         if (AppServices.Vault.IsUnlocked)
         {
-            // 以工作副本为准做差异同步：删除/改名 → 先清掉不在新集合中的旧账号
-            var keepUsers = _accounts
-                .Where(a => !string.IsNullOrWhiteSpace(a.User))
-                .Select(a => a.User)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var old in AppServices.Vault.GetAll(_system.Uuid, client)
-                         .Where(o => !keepUsers.Contains(o.User)).ToList())
+            // 按客户端逐个差异同步：删除/改名 → 先清掉不在新集合中的旧账号。
+            // 全程 persist=false，末尾只做一次整库加密写盘，账号再多也不会 N 次重写。
+            foreach (var kv in _byClient)
             {
-                AccountService.Delete(AppServices.Vault, _system.Uuid, client, old.User);
-            }
+                var groupClient = kv.Key;
+                var group = kv.Value;
+                var keepUsers = group
+                    .Where(a => !string.IsNullOrWhiteSpace(a.User))
+                    .Select(a => a.User)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var account in _accounts)
-            {
-                if (string.IsNullOrWhiteSpace(account.User)) continue;
-                account.SystemUuid = _system.Uuid;
-                account.Client = client;
-                Log.Info($"保存账号 {account.User}（客户端 {client}）：姓名={(string.IsNullOrEmpty(account.DisplayName) ? "(空)" : account.DisplayName)}，密码长度={account.Password.Length}，默认={account.IsDefault}");
-                if (!AccountService.Save(AppServices.Vault, account, out var error))
+                foreach (var old in AppServices.Vault.GetAll(_system.Uuid, groupClient)
+                             .Where(o => !keepUsers.Contains(o.User)).ToList())
                 {
-                    ShowError(error);
-                    return;
+                    AccountService.Delete(AppServices.Vault, _system.Uuid, groupClient, old.User, persist: false);
                 }
-                if (ReferenceEquals(account, _selectedAccount)) ResultCredential = account;
+
+                foreach (var account in group)
+                {
+                    if (string.IsNullOrWhiteSpace(account.User)) continue;
+                    account.SystemUuid = _system.Uuid;
+                    account.Client = groupClient;
+                    Log.Info($"保存账号 {account.User}（客户端 {groupClient}）：姓名={(string.IsNullOrEmpty(account.DisplayName) ? "(空)" : account.DisplayName)}，密码长度={account.Password.Length}，默认={account.IsDefault}");
+                    if (!AccountService.Save(AppServices.Vault, account, out var error, persist: false))
+                    {
+                        ShowError(error);
+                        return;
+                    }
+                    if (ReferenceEquals(account, _selectedAccount)) ResultCredential = account;
+                }
             }
 
+            AppServices.Vault.Save();
             _system.DefaultUser = AppServices.Vault.GetAny(_system.Uuid)?.Display ?? "";
         }
         else
         {
-            if (_accounts.Any(a => !string.IsNullOrEmpty(a.Password)))
+            if (_byClient.Values.SelectMany(g => g).Any(a => !string.IsNullOrEmpty(a.Password)))
             {
                 ShowError(Localizer.Get("Msg.Locked"));
                 return;
