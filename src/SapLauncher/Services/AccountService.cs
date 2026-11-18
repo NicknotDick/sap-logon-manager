@@ -18,8 +18,7 @@ public static class AccountService
 {
     /// <summary>
     /// 右键菜单单条凭据的简要文本：「账号（姓名） · 语言」。姓名为空时省略括号，
-    /// 语言为空按 ZH。客户端号由菜单外层「客户端 {0} · {1}」补上，合起来即
-    /// 「客户端 账号（姓名） · 语言」。抽成纯函数便于自检断言。
+    /// 语言为空按 ZH。客户端号由 FormatEntryLine 补在前面。抽成纯函数便于自检断言。
     /// </summary>
     public static string FormatAccountBrief(Credential c)
     {
@@ -27,6 +26,16 @@ public static class AccountService
         if (!string.IsNullOrWhiteSpace(c.DisplayName)) who += "（" + c.DisplayName.Trim() + "）";
         var lang = string.IsNullOrWhiteSpace(c.Language) ? "ZH" : c.Language.Trim();
         return string.IsNullOrEmpty(who) ? lang : who + " · " + lang;
+    }
+
+    /// <summary>
+    /// 右键菜单整行文本：「客户端 · 账号（姓名） · 语言」。客户端仅显示数字，
+    /// 不显示"客户端"字样，语言后也不附加"（默认）"。默认登录项与普通项统一使用此格式。
+    /// </summary>
+    public static string FormatEntryLine(Credential c)
+    {
+        var client = string.IsNullOrWhiteSpace(c.Client) ? "—" : c.Client.Trim();
+        return client + " · " + FormatAccountBrief(c);
     }
 
     /// <summary>某客户端已保存的账号数（仅用于展示，不再作为限制条件）。</summary>

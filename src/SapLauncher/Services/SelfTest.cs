@@ -865,7 +865,13 @@ public static class SelfTest
                 if (!groups[0].Accounts.Any(a => a.Display == "李四 (U2)"))
                     throw new InvalidOperationException("显示串应为『姓名 (账号)』");
 
-                // 右键菜单平铺项：客户端 + 账号（姓名） · 语言；姓名为空省略括号
+                // 右键菜单整行：客户端（纯数字） · 账号（姓名） · 语言；无"客户端"前缀、无"（默认）"字样
+                if (AccountService.FormatEntryLine(new Credential { Client = "500", User = "DEMO_USER", Language = "ZH" })
+                    != "500 · DEMO_USER · ZH")
+                    throw new InvalidOperationException("菜单整行应为『500 · DEMO_USER · ZH』");
+                if (AccountService.FormatEntryLine(new Credential { Client = "300", User = "SYSD", DisplayName = "张三", Language = "EN", IsDefault = true })
+                    != "300 · SYSD（张三） · EN")
+                    throw new InvalidOperationException("默认账号也不得附加『（默认）』字样");
                 if (AccountService.FormatAccountBrief(new Credential { User = "SYSD", DisplayName = "张三", Language = "EN" })
                     != "SYSD（张三） · EN")
                     throw new InvalidOperationException("菜单简要串应为『账号（姓名） · 语言』");
@@ -876,7 +882,7 @@ public static class SelfTest
                     != "SYSD（张三） · ZH")
                     throw new InvalidOperationException("语言为空应按 ZH");
 
-                sb.AppendLine("      八条(100/300 各 1-4)全部保存；跨客户端同名账号独立；同账号覆盖；语言随条；菜单『客户端 账号（姓名）·语言』正确");
+                sb.AppendLine("      八条(100/300 各 1-4)全部保存；跨客户端同名账号独立；同账号覆盖；语言随条；菜单整行『客户端 账号（姓名）·语言』无默认字样");
             }
             finally
             {

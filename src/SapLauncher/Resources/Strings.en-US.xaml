@@ -48,7 +48,7 @@
     <sys:String x:Key="Ctx.ClientGroup">Client {0}</sys:String>
     <sys:String x:Key="Ctx.DefaultSuffix"> (default)</sys:String>
     <sys:String x:Key="Ctx.LoginDefault">Log on (default {0})</sys:String>
-    <sys:String x:Key="Ctx.EntryLine">Client {0} · {1}</sys:String>
+    <sys:String x:Key="Ctx.EntryLine">{0} · {1}</sys:String>
     <sys:String x:Key="Ctx.Login">Log on</sys:String>
     <sys:String x:Key="Ctx.Edit">Edit connection…</sys:String>
     <sys:String x:Key="Ctx.Credential">Edit credentials…</sys:String>

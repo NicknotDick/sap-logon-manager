@@ -998,9 +998,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 默认登录项仍取「最近使用客户端的默认账号」，双击/Enter 行为保持不变
+        // 默认登录项与普通项格式完全一致：客户端（纯数字） · 账号（姓名） · 语言，不带"（默认）"
         var def = AppServices.Vault.GetAny(system.Uuid) ?? all[0];
-        MenuLogin.Header = string.Format(Localizer.Get("Ctx.LoginDefault"), def.Display);
+        MenuLogin.Header = AccountService.FormatEntryLine(def);
 
         var insertAt = menu.Items.IndexOf(MenuLogin) + 1;
 
@@ -1009,10 +1009,7 @@ public partial class MainWindow : Window
         {
             foreach (var account in group.Accounts)
             {
-                var clientText = string.IsNullOrWhiteSpace(account.Client) ? "—" : account.Client;
-                var header = string.Format(Localizer.Get("Ctx.EntryLine"),
-                                 clientText, AccountService.FormatAccountBrief(account)) +
-                             (account.IsDefault ? Localizer.Get("Ctx.DefaultSuffix") : "");
+                var header = AccountService.FormatEntryLine(account);
                 var item = new MenuItem { Header = header };
                 var captured = account;
                 item.Click += async (_, _) => await LoginAsync(system, captured);
