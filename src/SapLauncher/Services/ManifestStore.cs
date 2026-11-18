@@ -37,12 +37,22 @@ public sealed class ManifestStore
             Data = new ManifestData();
         }
 
+        Normalize();
+    }
+
+    /// <summary>
+    /// 载入/回滚后的统一规范化：容器集合兜底 + 老数据迁移。
+    /// Load 与 RestoreLatestBackup 都必须经过此步骤，保证快照回滚后
+    /// 「登录过的客户端」等新字段与首次加载行为一致。
+    /// </summary>
+    private void Normalize()
+    {
         Data.Settings ??= new AppSettings();
         Data.Systems ??= new List<SapSystem>();
         Data.Groups ??= new List<GroupDef>();
         Data.Scripts ??= new List<ScriptDef>();
 
-        // 老数据兼容：新字段「登录过的客户端」在旧 manifest 里不存在。
+        // 老数据兼容：新字段「登录过的客户端」在旧 manifest / 旧快照里不存在。
         // 用原有 LastClient（登录成功时记录的最后客户端）作为种子迁移一次，
         // 之后每次登录成功由 AccountService.MarkLoggedInClient 继续累积。
         foreach (var s in Data.Systems)
@@ -111,6 +121,7 @@ public sealed class ManifestStore
             var data = JsonSerializer.Deserialize<ManifestData>(json, Options);
             if (data is null) { message = "快照内容无效"; return false; }
             Data = data;
+            Normalize(); // 与 Load 相同的兜底与老数据迁移，保证回滚后行为一致
             Save();
             message = "已回滚到 " + Path.GetFileName(latest);
             return true;

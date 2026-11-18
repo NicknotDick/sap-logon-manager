@@ -534,6 +534,46 @@ public static class SelfTest
             }
         });
 
+        // 8b. manifest 备份回滚：旧快照（无「登录过的客户端」字段）恢复后应完成迁移
+        Check("manifest 备份回滚迁移", () =>
+        {
+            var original = AppPaths.Root;
+            var sandbox = Path.Combine(AppPaths.Root, "selftest-backup-restore");
+            try
+            {
+                AppPaths.OverrideRoot(sandbox);
+                Directory.CreateDirectory(AppPaths.Backups);
+
+                // 手工放入一份「旧版本格式」快照：只有 LastClient，没有 LoggedInClients 字段
+                var oldSnapshot = """
+                    {
+                      "Settings": {},
+                      "Systems": [
+                        { "Uuid": "u1", "Name": "旧快照连接", "Sid": "DQ1", "Host": "1.2.3.4", "Port": 3200, "LastClient": "800" }
+                      ]
+                    }
+                    """;
+                File.WriteAllText(Path.Combine(AppPaths.Backups, "manifest-20260101-000000.json"), oldSnapshot);
+
+                var store = new ManifestStore();
+                if (!store.RestoreLatestBackup(out _))
+                    throw new InvalidOperationException("回滚失败");
+
+                var s0 = store.Data.Systems.FirstOrDefault();
+                if (s0 is null) throw new InvalidOperationException("回滚后系统清单为空");
+                if (store.Data.Settings is null) throw new InvalidOperationException("回滚后 Settings 未兜底");
+                if (s0.LoggedInClients is null || !s0.LoggedInClients.Contains("800"))
+                    throw new InvalidOperationException("旧快照回滚后未从 LastClient 迁移登录过的客户端");
+
+                sb.AppendLine("      旧快照（仅 LastClient）回滚后自动迁移为「登录过的客户端」");
+            }
+            finally
+            {
+                AppPaths.OverrideRoot(original);
+                try { Directory.Delete(sandbox, true); } catch { }
+            }
+        });
+
         // 9. 批量操作（多选移动分组）与客户端显示
         Check("批量移动分组 / 客户端显示", () =>
         {
