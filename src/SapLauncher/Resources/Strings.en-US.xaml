@@ -146,6 +146,7 @@
     <sys:String x:Key="Settings.Title">Settings</sys:String>
     <sys:String x:Key="Settings.General">General</sys:String>
     <sys:String x:Key="Settings.Theme">Theme</sys:String>
+    <sys:String x:Key="Settings.System">Follow system</sys:String>
     <sys:String x:Key="Settings.Dark">Dark</sys:String>
     <sys:String x:Key="Settings.Light">Light</sys:String>
     <sys:String x:Key="Settings.Language">Language</sys:String>

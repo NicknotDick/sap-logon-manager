@@ -1,5 +1,7 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using Microsoft.Win32;
 
 namespace SapLauncher.Services;
@@ -83,6 +85,35 @@ public static class ThemeManager
 {
     public const string Dark = "Dark";
     public const string Light = "Light";
+    public const string System = "System";
+
+    private const string PersonalizeKey =
+        @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+    /// <summary>系统当前是否使用浅色应用主题（注册表 AppsUseLightTheme：1=浅色，0=深色）。</summary>
+    private static bool SystemUsesLight
+    {
+        get
+        {
+            try
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(PersonalizeKey);
+                if (key?.GetValue("AppsUseLightTheme") is int v) return v != 0;
+            }
+            catch { }
+            return false; // 读不到（异常/旧系统）时按深色处理，与历史默认一致
+        }
+    }
+
+    /// <summary>把设置值（Dark/Light/System）解析为实际主题 Dark/Light。</summary>
+    public static string Resolve(string theme)
+    {
+        if (theme.Equals(System, StringComparison.OrdinalIgnoreCase))
+            return SystemUsesLight ? Light : Dark;
+        return theme.Equals(Light, StringComparison.OrdinalIgnoreCase) ? Light : Dark;
+    }
+
+    /// <summary>当前生效主题（已解析 System）。</summary>
+    public static string Effective => Resolve(AppServices.Settings.Theme);
 
     public static void Apply(string theme)
     {
@@ -90,7 +121,7 @@ public static class ThemeManager
         {
             var app = Application.Current;
             if (app is null) return;
-            var uri = new Uri(theme.Equals(Light, StringComparison.OrdinalIgnoreCase)
+            var uri = new Uri(Resolve(theme).Equals(Light, StringComparison.Ordinal)
                 ? "Themes/Light.xaml"
                 : "Themes/Dark.xaml", UriKind.Relative);
             var dict = new ResourceDictionary { Source = uri };
@@ -104,6 +135,59 @@ public static class ThemeManager
         {
             Log.Warn("切换主题失败：" + ex.Message);
         }
+    }
+}
+
+/// <summary>
+/// 系统主题变化监听：Windows 在深浅色切换时广播 WM_SETTINGCHANGE（lParam 指向 "ImmersiveColorSet"）。
+/// 仅当设置值为「跟随系统」时重新应用主题并刷新所有已打开窗口的标题栏。
+/// </summary>
+public static class SystemThemeWatcher
+{
+    private const int WM_SETTINGCHANGE = 0x001A;
+    private static HwndSourceHook? _hook;
+    private static bool _attached;
+
+    /// <summary>在主窗口句柄建立后挂接消息钩子（仅需挂一次）。</summary>
+    public static void Attach(Window window)
+    {
+        if (_attached) return;
+        var source = (HwndSource.FromHwnd(new WindowInteropHelper(window).Handle));
+        if (source is null) return;
+
+        _hook = Hook;
+        source.AddHook(_hook);
+        _attached = true;
+        window.Closed += (_, _) => Detach(source);
+    }
+
+    private static void Detach(HwndSource source)
+    {
+        if (_hook != null) source.RemoveHook(_hook);
+        _attached = false;
+    }
+
+    private static IntPtr Hook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg != WM_SETTINGCHANGE) return IntPtr.Zero;
+        try
+        {
+            var param = Marshal.PtrToStringAuto(lParam);
+            if (!string.Equals(param, "ImmersiveColorSet", StringComparison.Ordinal))
+                return IntPtr.Zero;
+
+            if (!AppServices.Settings.Theme.Equals(ThemeManager.System, StringComparison.OrdinalIgnoreCase))
+                return IntPtr.Zero; // 手动指定深/浅色：不跟随系统
+
+            ThemeManager.Apply(ThemeManager.System);
+            foreach (Window w in Application.Current.Windows)
+                WindowTheme.Refresh(w);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("响应系统主题变化失败：" + ex.Message);
+        }
+        return IntPtr.Zero;
     }
 }
 

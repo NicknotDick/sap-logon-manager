@@ -7,7 +7,7 @@ namespace SapLauncher.Services;
 public static class WindowTheme
 {
     private static bool IsLight
-        => string.Equals(AppServices.Settings.Theme, ThemeManager.Light, StringComparison.OrdinalIgnoreCase);
+        => ThemeManager.Effective.Equals(ThemeManager.Light, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>按当前主题设置标题栏深浅（Windows 10 1809+ 支持）。</summary>
     public static void Apply(Window window)

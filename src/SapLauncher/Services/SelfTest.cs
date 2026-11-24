@@ -49,6 +49,18 @@ public static class SelfTest
             if (!gui.IsInstalled) throw new InvalidOperationException("未检测到 SAP GUI");
         });
 
+        // 1c. 主题解析（Light/Dark 透传，未知值回退 Dark，System 必解析出有效值）
+        Check("主题解析（跟随系统 / 回退规则）", () =>
+        {
+            if (ThemeManager.Resolve("Light") != ThemeManager.Light) throw new InvalidOperationException("Light 应解析为浅色");
+            if (ThemeManager.Resolve("dark") != ThemeManager.Dark) throw new InvalidOperationException("dark 应解析为深色");
+            if (ThemeManager.Resolve("") != ThemeManager.Dark) throw new InvalidOperationException("未知值应回退深色");
+            var eff = ThemeManager.Resolve("System");
+            if (eff != ThemeManager.Light && eff != ThemeManager.Dark)
+                throw new InvalidOperationException("System 必须解析为 Light/Dark，实际=" + eff);
+            sb.AppendLine($"      系统实际主题={eff}");
+        });
+
         // 1b. SAP GUI 定位：手动指定优先、无效目录回退、探测记录
         Check("SAP GUI 定位：手动目录优先 / 无效目录回退", () =>
         {

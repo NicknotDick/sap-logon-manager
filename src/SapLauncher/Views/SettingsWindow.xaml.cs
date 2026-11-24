@@ -16,6 +16,7 @@ public partial class SettingsWindow : Window
         WindowTheme.Apply(this);
         _owner = owner;
 
+        ThemeBox.Items.Add(new ComboBoxItem { Content = Localizer.Get("Settings.System"), Tag = ThemeManager.System });
         ThemeBox.Items.Add(new ComboBoxItem { Content = Localizer.Get("Settings.Dark"), Tag = ThemeManager.Dark });
         ThemeBox.Items.Add(new ComboBoxItem { Content = Localizer.Get("Settings.Light"), Tag = ThemeManager.Light });
         LangBox.Items.Add(new ComboBoxItem { Content = "简体中文", Tag = "zh-CN" });

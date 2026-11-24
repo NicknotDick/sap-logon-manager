@@ -172,6 +172,9 @@ public partial class MainWindow : Window
 
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
+        // 「跟随系统」主题：监听系统深浅色切换广播（仅需主窗口挂一次）
+        SystemThemeWatcher.Attach(this);
+
         _hotkey = new HotkeyService();
         if (!_hotkey.TryRegister(this, AppServices.Settings.Hotkey, out var error))
         {

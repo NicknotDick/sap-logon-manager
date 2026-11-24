@@ -146,6 +146,7 @@
     <sys:String x:Key="Settings.Title">设置</sys:String>
     <sys:String x:Key="Settings.General">通用</sys:String>
     <sys:String x:Key="Settings.Theme">主题</sys:String>
+    <sys:String x:Key="Settings.System">跟随系统</sys:String>
     <sys:String x:Key="Settings.Dark">深色</sys:String>
     <sys:String x:Key="Settings.Light">浅色</sys:String>
     <sys:String x:Key="Settings.Language">界面语言</sys:String>
