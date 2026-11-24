@@ -5,6 +5,11 @@
 import json
 import os
 import sys
+from datetime import datetime
+
+# 手册封面版本号与日期取生成时刻；程序「关于」窗口的 GURURU 版本号取 exe 构建时刻
+BUILD_TAG = "GURURU" + datetime.now().strftime("%Y%m%d%H%M")
+DOC_DATE = datetime.now().strftime("%Y-%m-%d")
 
 OUT_PDF = r"E:\WorkBuddy\SAP 登陆器\SAP登录管理器-操作使用手册-User-Manual.pdf"
 FONT = r"C:\Windows\Fonts\msyh.ttc"
@@ -115,9 +120,9 @@ p("操作使用手册  |  User Manual", font_size=17, alignment="center", space_
 p("中英双语版 · Chinese-English Bilingual Edition",
   font_size=11, alignment="center", font_color=GREY, space_after=18)
 kv([
-    ("软件版本 / Version", "GURURU202611181818"),
-    ("发行版本 / Release", "v1.6.3"),
-    ("文档日期 / Date", "2026-11-18"),
+    ("软件版本 / Version", BUILD_TAG),
+    ("发行版本 / Release", "v1.6.4"),
+    ("文档日期 / Date", DOC_DATE),
     ("适用平台 / Platform", "Windows 10 / 11（64 位）/ 64-bit"),
     ("SAP 客户端 / SAP GUI", "7.40 及以上（已在 8.0 实测）/ 7.40 or later (verified on 8.0)"),
     ("作者 / Author", "Gururu Nick"),
@@ -434,6 +439,17 @@ en("One machine may host several systems sharing the same SID (e.g. two systems 
    "application server + instance number + system ID: -guiparm is appended to the command line and GuiParm "
    "is written into the temporary .sap file, so the intended system is always opened.")
 
+h2("9.10 主题：跟随系统", "9.10 Theme: Follow System")
+zh("「设置 → 通用 → 主题」提供三种模式：跟随系统、深色、浅色。选择「跟随系统」时，"
+   "程序按 Windows 应用的深浅色设置自动选择界面主题；在 Windows 设置中切换颜色模式时，已打开的程序会即时跟随，无需重启。"
+   "手动选择深色或浅色则固定，不随 Windows 设置变化。")
+en("Settings → General → Theme offers three modes: Follow system, Dark and Light. In Follow system mode the app "
+   "matches the Windows app color mode; changing the Windows color mode updates open windows immediately, no "
+   "restart needed. Selecting Dark or Light pins the theme regardless of Windows settings.")
+note("若系统颜色设置不可读取（例如旧系统或权限异常），程序按深色处理。此设置仅影响界面配色与窗口标题栏，不影响连接、登录或凭据。",
+     "If the system color setting cannot be read (older Windows or restricted access), the app falls back to Dark. "
+     "This setting only affects UI colors and window title bars — never connections, logon or credentials.")
+
 # ============================== 10. 登录机制与故障排查 ==============================
 h1("10. 登录机制与故障排查", "10. Logon Mechanism & Troubleshooting")
 
@@ -576,23 +592,25 @@ zh("按时间倒序列出的版本更新摘要：")
 en("Release notes in reverse chronological order:")
 tbl(["版本 / Ver", "日期 / Date", "更新摘要 / Summary"],
     [
+     ["v1.6.4", DOC_DATE,
+      "新增「跟随系统」主题，随 Windows 深浅色实时切换并同步标题栏。"],
      ["v1.6.3", "2026-11-18",
-      "同一连接支持多客户端 × 多账号，数量不限；右键菜单平铺显示「客户端 · 账号（姓名）」，悬停文字右方展开 ZH/EN 语言子菜单，点语言按所选语言登录、点文字按配置语言登录；删除账号即时落盘（同名重复保留带姓名条目）；编辑器只显示成功登录过的客户端；快照回滚自动完成老数据迁移；「关于」数据目录可点击打开。"],
+      "多客户端 × 多账号、右键选语言登录、删除即时落盘、数据目录可点击。"],
      ["v1.6.2", "2026-11-14",
-      "修复快速搜索窗口关闭时偶发的异常（窗口关闭重入）；错误日志记录完整堆栈。"],
+      "修复快速搜索窗关闭异常；错误日志记录完整堆栈。"],
      ["v1.6.1", "2026-11-10",
-      "第二实例启动直接唤出已有窗口，解决「双击像打不开」；操作手册新增 13 张演示数据截图。"],
+      "第二实例启动直接唤出已有窗口；操作手册新增 13 张演示截图。"],
      ["v1.6.0", "2026-11-10",
-      "窗口回到前台或内部有操作时即时刷新连通状态（带节流）；主密码改为可选，默认不启用即可使用。"],
+      "前台/操作时即时刷新连通状态；主密码改为可选。"],
      ["v1.5.3", "2026-11-05",
-      "SAP GUI 探测增强（注册表 / 卸载项 / PATH / 全盘常见路径）并支持手动指定；登录弹框自动填表引入可信目录集合；默认配置调整（闲置锁定默认关闭、默认允许命令行带密码）。"],
+      "SAP GUI 全路径探测/手动指定；登录框自动填表；默认配置调整。"],
      ["v1.5.0", "2026-11-02",
-      "首个发布版本：连接同步、凭据加密保存、一键/批量登录、分组收藏、事务码直达、脚本绑定、导入导出与便携模式。"],
+      "首个发布版：连接同步、凭据加密、一键登录、分组、脚本与便携模式。"],
     ],
-    col_widths=[62, 78, 358])
+    col_widths=[58, 70, 339])  # 合计 467pt = A4 宽度 595 - 左右边距 64×2，避免摘要列溢出裁切
 
 hr()
-p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611181818",
+p("SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — " + BUILD_TAG,
   font_size=9, alignment="center", font_color="#888888")
 
 # ============================== 输出配置 ==============================
