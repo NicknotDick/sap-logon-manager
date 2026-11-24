@@ -51,7 +51,7 @@
    "pairs": [
     {
      "key": "软件版本 / Version",
-     "value": "GURURU202611240947"
+     "value": "GURURU202611240954"
     },
     {
      "key": "发行版本 / Release",
@@ -1332,7 +1332,7 @@
   },
   {
    "type": "paragraph",
-   "text": "SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611240947",
+   "text": "SAP 登录管理器 · 操作使用手册  |  SAP Logon Manager · User Manual — GURURU202611240954",
    "font_size": 9,
    "alignment": "center",
    "font_color": "#888888"

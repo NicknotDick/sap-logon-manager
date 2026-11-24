@@ -7,8 +7,10 @@ import os
 import sys
 from datetime import datetime
 
-# 手册封面版本号与日期取生成时刻；程序「关于」窗口的 GURURU 版本号取 exe 构建时刻
-BUILD_TAG = "GURURU" + datetime.now().strftime("%Y%m%d%H%M")
+# 手册封面版本号与日期取生成时刻；程序「关于」窗口的 GURURU 版本号取 exe 构建时刻。
+# 发布时传 --tag=GURURUYYYYMMDDHHMM，使手册与 exe 的「关于」版本号完全一致。
+_tag_arg = next((a for a in sys.argv if a.startswith("--tag=")), None)
+BUILD_TAG = _tag_arg.split("=", 1)[1] if _tag_arg else "GURURU" + datetime.now().strftime("%Y%m%d%H%M")
 DOC_DATE = datetime.now().strftime("%Y-%m-%d")
 
 OUT_PDF = r"E:\WorkBuddy\SAP 登陆器\SAP登录管理器-操作使用手册-User-Manual.pdf"
