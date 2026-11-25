@@ -220,7 +220,7 @@
 
     <sys:String x:Key="Quick.Placeholder">输入系统名称，回车登录</sys:String>
     <sys:String x:Key="Quick.Empty">无匹配系统</sys:String>
-    <sys:String x:Key="Quick.Hint">↑↓ 选择 · Enter 登录 · Esc 关闭</sys:String>
+    <sys:String x:Key="Quick.Hint">↑↓ 选择 · Enter 登录 · 右击选账号/语言 · Esc 关闭</sys:String>
 
     <sys:String x:Key="Msg.Copied">已复制到剪贴板</sys:String>
     <sys:String x:Key="Msg.NoGui">未检测到 SAP GUI，请先安装 SAP GUI for Windows</sys:String>

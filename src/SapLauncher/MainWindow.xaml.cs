@@ -1021,99 +1021,22 @@ public partial class MainWindow : Window
         var def = AppServices.Vault.GetAny(system.Uuid) ?? all[0];
         MenuLogin.Header = AccountService.FormatEntryLineNoLang(def);
         _menuDefaultAccount = def;
-        AttachLanguageMenu(MenuLogin, system, () => _menuDefaultAccount, ref _defaultMenuHooked);
+
+        // 账号菜单交互（语言二级菜单 / 点文字登录 / 去重）统一由共享构建器提供，
+        // 快速搜索窗口右键菜单复用同一实现，避免两处逻辑漂移。
+        void CloseMenu() { if (SystemList.ContextMenu is { } cm) cm.IsOpen = false; }
+        AccountLoginMenu.LoginHandler login = (s, a, lang) => LoginAsync(s, a, languageOverride: lang);
+
+        AccountLoginMenu.AttachLanguageMenu(MenuLogin, () => Current, () => _menuDefaultAccount,
+            login, CloseMenu, ref _defaultMenuHooked);
 
         var insertAt = menu.Items.IndexOf(MenuLogin) + 1;
-
-        // 全部平铺：客户端数值升序、组内默认优先；账号文字不含语言，语言放到二级子菜单。
-        // 与默认登录项相同的那条跳过，避免同一账号在菜单里重复出现两次。
-        foreach (var group in groups)
+        foreach (var item in AccountLoginMenu.BuildAdditionalAccountItems(
+                     AppServices.Vault.Items, system.Uuid, def, () => Current, login, CloseMenu))
         {
-            foreach (var account in group.Accounts)
-            {
-                if (AccountService.IsSameAccount(account, def)) continue;
-                var item = new MenuItem { Header = AccountService.FormatEntryLineNoLang(account) };
-                var captured = account;
-                var hooked = false;
-                AttachLanguageMenu(item, system, () => captured, ref hooked);
-                menu.Items.Insert(insertAt++, item);
-                _accountMenuItems.Add(item);
-            }
+            menu.Items.Insert(insertAt++, item);
+            _accountMenuItems.Add(item);
         }
-    }
-
-    /// <summary>
-    /// 语言菜单命中区回退宽度（DIP）：模板未就绪时按右侧固定 140 计算。
-    /// </summary>
-    private const double ArrowZoneWidth = 140;
-
-    /// <summary>
-    /// 判断横向位置是否落在语言菜单命中区：账号文字（HeaderPresenter）右方的整个区域，
-    /// 含快捷键文字、空白与箭头列。通过模板元素的实际位置动态计算，
-    /// 模板未应用或视觉树未就绪时回退为右侧固定 ArrowZoneWidth。
-    /// </summary>
-    private bool IsInLanguageZone(MenuItem item, double x)
-    {
-        double start = item.ActualWidth - ArrowZoneWidth;
-        if (item.Template?.FindName("HeaderPresenter", item) is FrameworkElement fe)
-        {
-            try
-            {
-                start = fe.TransformToAncestor(item).Transform(new Point(0, 0)).X + fe.ActualWidth;
-            }
-            catch { /* 视觉树未就绪，用回退值 */ }
-        }
-        return x >= start;
-    }
-
-    /// <summary>
-    /// 给账号菜单项挂语言二级菜单（仅当鼠标悬停到账号文字右方的命中区时展开 ZH / EN），
-    /// 并实现「直接点账号文字按配置语言登录」。
-    /// WPF 中带子项的 MenuItem 属 Header 角色，鼠标按下任意位置都会展开子菜单而不触发 Click；
-    /// 故在 PreviewMouseLeftButtonDown（隧道阶段）拦截：标记 e.Handled 后 WPF 的
-    /// OnMouseLeftButtonDown 因 !e.Handled 直接跳过 HandleMouseDown/ClickHeader，子菜单不会闪开。
-    /// 点在文字右方命中区（IsInLanguageZone）则不拦截，交给 WPF 正常展开子菜单。
-    /// <paramref name="hooked"/> 防止同一 MenuItem（默认项常驻）被重复挂接事件。
-    /// </summary>
-    private void AttachLanguageMenu(MenuItem item, SapSystem system, Func<Credential?> accountGetter, ref bool hooked)
-    {
-        foreach (var lang in AccountService.LoginLanguages)
-        {
-            var langItem = new MenuItem { Header = lang };
-            langItem.Click += async (_, _) =>
-            {
-                var a = accountGetter();
-                var s = Current; // 语言项随菜单重建，读取当前连接更稳妥
-                if (a is not null && s is not null) await LoginAsync(s, a, languageOverride: lang);
-            };
-            item.Items.Add(langItem);
-        }
-
-        if (hooked) return;
-        hooked = true;
-
-        // 语言子菜单仅在鼠标位于账号文字右方的命中区时才允许展开。WPF 对 Header 角色的
-        // 菜单项会在悬停任意位置时自动展开子菜单，这里在 SubmenuOpened 里校验鼠标横向位置：
-        // 不在命中区则同步收回 —— Popup 尚未渲染，不会出现闪烁。
-        item.SubmenuOpened += (_, _) =>
-        {
-            var pos = Mouse.GetPosition(item);
-            if (item.ActualWidth <= 0 || !IsInLanguageZone(item, pos.X))
-                item.IsSubmenuOpen = false;
-        };
-
-        item.PreviewMouseLeftButtonDown += (_, e) =>
-        {
-            if (e.Handled) return;
-            var pos = e.GetPosition(item);
-            if (item.ActualWidth > 0 && IsInLanguageZone(item, pos.X)) return; // 命中区：让子菜单展开
-            var a = accountGetter();
-            var s = Current; // 事件只挂一次，须在触发时读取当前连接，避免闭包捕获过期 system
-            if (a is null || s is null) return; // 无账号时保留 MenuLogin 原 Click 行为（弹编辑框）
-            e.Handled = true; // 阻止 Header 角色在按下阶段展开子菜单
-            if (SystemList.ContextMenu is { } cm) cm.IsOpen = false;
-            _ = LoginAsync(s, a);
-        };
     }
 
     private SapSystem? Current => SystemList.SelectedItem as SapSystem;
@@ -1385,7 +1308,9 @@ public partial class MainWindow : Window
         }
 
         var systems = AppServices.Manifest.Data.Systems.Where(s => !s.IsStale).ToList();
-        var win = new QuickSearchWindow(systems, async s => await LoginAsync(s));
+        // 第三参数为语言覆盖：默认 Enter/双击为 null（按账号配置语言），右击菜单选定语言时传入 ZH/EN
+        var win = new QuickSearchWindow(systems, async (s, chosen, lang) =>
+            await LoginAsync(s, chosen, languageOverride: lang));
         _quickSearch = win;
         win.Closed += (_, _) =>
         {

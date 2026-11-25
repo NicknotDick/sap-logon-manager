@@ -1114,6 +1114,27 @@ public static class SelfTest
             sb.AppendLine("      模板含 PART_EditableTextBox，输入 205 同步成功");
         });
 
+        // 8b. 账号登录菜单共享构建（快速搜索与主窗口复用）：去重 + 语言二级项
+        Check("账号登录菜单共享构建（去重/语言子项）", () =>
+        {
+            var uuid = "SELFTEST-MENU-" + Guid.NewGuid().ToString("N");
+            var a1 = new Credential { SystemUuid = uuid, Client = "100", User = "DEMO_A", DisplayName = "演示甲", Language = "ZH", IsDefault = true };
+            var a2 = new Credential { SystemUuid = uuid, Client = "100", User = "DEMO_B", DisplayName = "演示乙", Language = "EN" };
+            var a3 = new Credential { SystemUuid = uuid, Client = "300", User = "DEMO_C", Language = "ZH" };
+            var list = new List<Credential> { a1, a2, a3 };
+
+            var items = AccountLoginMenu.BuildAdditionalAccountItems(list, uuid, a1,
+                () => null, (_, _, _) => Task.CompletedTask, () => { });
+
+            // a1 为默认项，不应在平铺列表里重复出现
+            if (items.Count != 2) throw new InvalidOperationException($"平铺账号数应为 2，实际 {items.Count}");
+            if (items.Any(i => (i.Header?.ToString() ?? "").Contains("DEMO_A")))
+                throw new InvalidOperationException("默认账号在平铺列表中重复出现");
+            if (items.Any(i => !AccountService.LoginLanguages.All(l => i.Items.OfType<System.Windows.Controls.MenuItem>().Any(m => m.Header?.ToString() == l))))
+                throw new InvalidOperationException("账号项缺少 ZH/EN 语言二级菜单");
+            sb.AppendLine("      默认账号已去重，其余 2 条均含 ZH/EN 子菜单");
+        });
+
         // 9. 窗口 XAML 实例化
         MainWindow? main = null;
         Check("主窗口 XAML", () => { main = new MainWindow(); });
@@ -1126,12 +1147,15 @@ public static class SelfTest
         Check("连接属性对话框", () => { _ = new Views.EntryEditorWindow(null, null); });
         if (main is not null) Check("设置对话框", () => { _ = new Views.SettingsWindow(main!); });
         Check("批量登录窗口", () => { _ = new Views.BatchWindow(new List<SapSystem>()); });
-        Check("快速搜索窗口", () => { _ = new Views.QuickSearchWindow(new List<SapSystem>(), _ => Task.CompletedTask); });
+        Check("快速搜索窗口", () =>
+        {
+            _ = new Views.QuickSearchWindow(new List<SapSystem>(), (_, _, _) => Task.CompletedTask);
+        });
         // 回归：Window.Close() 期间 Deactivated 处理器曾再次调用 Close()，
         // 触发「Cannot set Visibility ... while a Window is closing」。统一关闭入口必须可重入。
         Check("快速搜索窗口关闭防重入", () =>
         {
-            var win = new Views.QuickSearchWindow(new List<SapSystem>(), _ => Task.CompletedTask);
+            var win = new Views.QuickSearchWindow(new List<SapSystem>(), (_, _, _) => Task.CompletedTask);
             win.Show();
             try
             {
@@ -1508,7 +1532,7 @@ public static class SelfTest
         Shot("batch", () => new Views.BatchWindow(new List<SapSystem>()), 660);
         Shot("import", () => new Views.ImportWindow(), 640);
         Shot("about", () => new Views.AboutWindow(), 520);
-        Shot("quicksearch", () => new Views.QuickSearchWindow(new List<SapSystem>(), _ => Task.CompletedTask), 604);
+        Shot("quicksearch", () => new Views.QuickSearchWindow(new List<SapSystem>(), (_, _, _) => Task.CompletedTask), 604);
 
         return files;
     }

@@ -221,7 +221,7 @@
 
     <sys:String x:Key="Quick.Placeholder">Type a system name, Enter to log on</sys:String>
     <sys:String x:Key="Quick.Empty">No match</sys:String>
-    <sys:String x:Key="Quick.Hint">↑↓ select · Enter log on · Esc close</sys:String>
+    <sys:String x:Key="Quick.Hint">↑↓ select · Enter log on · right-click for account/language · Esc close</sys:String>
 
     <sys:String x:Key="Msg.Copied">Copied to clipboard</sys:String>
     <sys:String x:Key="Msg.NoGui">SAP GUI not found. Please install SAP GUI for Windows.</sys:String>

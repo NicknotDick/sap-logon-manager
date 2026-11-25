@@ -35,7 +35,11 @@
                 </TextBlock>
             </Grid>
 
-            <ListBox x:Name="Results" Grid.Row="1" Margin="0,10,0,0" MouseDoubleClick="OnDoubleClick">
+            <ListBox x:Name="Results" Grid.Row="1" Margin="0,10,0,0" MouseDoubleClick="OnDoubleClick"
+                     PreviewMouseRightButtonDown="OnRightButtonDown">
+                <ListBox.ContextMenu>
+                    <ContextMenu Opened="OnContextMenuOpened" />
+                </ListBox.ContextMenu>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Grid Height="44">
