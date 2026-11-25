@@ -35,7 +35,7 @@ public static class UpdateChecker
     /// 当前程序的发行版本号。发布新版本时必须同步更新此常量，否则「查找更新」会误判。
     /// 与 GitHub Release 的 tag 格式一致（vX.Y.Z）。
     /// </summary>
-    public const string CurrentTag = "v1.6.4";
+    public const string CurrentTag = "v1.6.5";
 
     private const string ApiUrl =
         "https://api.github.com/repos/NicknotDick/sap-logon-manager/releases/latest";

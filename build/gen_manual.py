@@ -123,7 +123,7 @@ p("中英双语版 · Chinese-English Bilingual Edition",
   font_size=11, alignment="center", font_color=GREY, space_after=18)
 kv([
     ("软件版本 / Version", BUILD_TAG),
-    ("发行版本 / Release", "v1.6.4"),
+    ("发行版本 / Release", "v1.6.5"),
     ("文档日期 / Date", DOC_DATE),
     ("适用平台 / Platform", "Windows 10 / 11（64 位）/ 64-bit"),
     ("SAP 客户端 / SAP GUI", "7.40 及以上（已在 8.0 实测）/ 7.40 or later (verified on 8.0)"),
@@ -452,6 +452,24 @@ note("若系统颜色设置不可读取（例如旧系统或权限异常），�
      "If the system color setting cannot be read (older Windows or restricted access), the app falls back to Dark. "
      "This setting only affects UI colors and window title bars — never connections, logon or credentials.")
 
+h2("9.11 检查更新", "9.11 Check for Updates")
+zh("两种方式：① 每天首次启动时程序在后台静默检查一次 GitHub 上的最新版本，只有发现新版本才弹出提示窗，"
+   "没有新版本或网络失败时不会打扰你；② 随时可在「关于」窗口点击「查找更新」手动检查。")
+en("Two ways: (1) on the first launch each day the app silently checks GitHub for the latest release in the "
+   "background and only shows a prompt when a newer version exists — no pop-up when you are up to date or "
+   "when the network fails; (2) use About → Check for Updates any time for a manual check.")
+zh("提示窗显示最新版本号、发布时间和更新摘要，提供「查看新版本」与「稍后再说」。选择「查看新版本」后，"
+   "程序按当前运行形态自动匹配安装包（zip 版下载 zip 包、单文件版下载单文件 exe），用默认浏览器打开下载链接；"
+   "找不到对应附件时打开发布页由你自行选择。")
+en("The prompt shows the latest version, publish date and release notes, with View new version and Later buttons. "
+   "Choosing View new version opens the matching package in your default browser — zip builds get the zip archive, "
+   "single-file builds get the single-file exe. If no matching asset exists, the releases page opens instead.")
+note("检查更新需要联网，只读取 GitHub 公开发布信息，不上传任何本机数据（连接、账号、凭据均不会外传）。"
+     "每日检查日期记录在数据目录的 update-check.txt 中；检查失败当天不再重试，可随时用「关于 → 查找更新」手动检查。",
+     "Update checks require internet access and only read public GitHub release data — no local connections, "
+     "accounts or credentials are ever uploaded. The daily check date is stored in update-check.txt in the data "
+     "folder; a failed check is not retried that day, but About → Check for Updates remains available.")
+
 # ============================== 10. 登录机制与故障排查 ==============================
 h1("10. 登录机制与故障排查", "10. Logon Mechanism & Troubleshooting")
 
@@ -594,7 +612,9 @@ zh("按时间倒序列出的版本更新摘要：")
 en("Release notes in reverse chronological order:")
 tbl(["版本 / Ver", "日期 / Date", "更新摘要 / Summary"],
     [
-     ["v1.6.4", DOC_DATE,
+     ["v1.6.5", DOC_DATE,
+      "新增「查找更新」与每日启动检查；快速搜索右击选账号/语言。"],
+     ["v1.6.4", "2026-11-24",
       "新增「跟随系统」主题，随 Windows 深浅色实时切换并同步标题栏。"],
      ["v1.6.3", "2026-11-18",
       "多客户端 × 多账号、右键选语言登录、删除即时落盘、数据目录可点击。"],
