@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Windows;
 
 namespace SapLauncher.Services;
 
@@ -119,6 +121,15 @@ public static class UpdateChecker
     private static string? GetString(JsonElement el, string name)
         => el.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 
+    /// <summary>把 Release 正文的 Markdown 转成适合弹窗显示的纯文本摘要。</summary>
+    public static string FormatNotes(string? body, int maxLength = 360)
+    {
+        var text = string.Join("\n", (body ?? "").Split('\n')
+            .Select(l => l.Trim().TrimStart('#', '*', '-', '>', '|').Trim())
+            .Where(l => l.Length > 0 && !l.StartsWith("---")));
+        return text.Length > maxLength ? text[..maxLength] + "…" : text;
+    }
+
     /// <summary>
     /// 版本比较：&gt;0 表示 newer 比 current 新。无法解析时返回 0（保守：不提示更新）。
     /// 支持 v 前缀与 -beta 等后缀。
@@ -165,4 +176,26 @@ public static class UpdateChecker
 
         return fallback?.DownloadUrl;
     }
+
+    /// <summary>用默认浏览器打开链接（下载页 / 发布页）。失败时提示，不抛异常。</summary>
+    public static void OpenBrowser(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("打开浏览器失败：" + ex.Message);
+            MessageBox.Show(Localizer.Get("About.BrowserFailed"), Localizer.Get("App.Title"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    /// <summary>
+    /// 跳转下载：按当前运行形态选择附件，找不到则打开发布页。
+    /// 「关于 → 查找更新」与「启动时提示」共用此方法。
+    /// </summary>
+    public static void OpenDownload(ReleaseInfo release)
+        => OpenBrowser(PickDownloadUrl(release, DetectPackageKind()) ?? ReleasesUri.AbsoluteUri);
 }

@@ -37,22 +37,7 @@ public partial class AboutWindow : Window
         GitHubText.Inlines.Add(link);
     }
 
-    private void OnOpenGitHub(object sender, RoutedEventArgs e) => OpenBrowser(ProjectUri.AbsoluteUri);
-
-    /// <summary>用系统默认浏览器打开链接（含更新下载）。</summary>
-    private static void OpenBrowser(string url)
-    {
-        try
-        {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-        }
-        catch (Exception ex)
-        {
-            Log.Warn("打开浏览器失败：" + ex.Message);
-            MessageBox.Show(Localizer.Get("About.BrowserFailed"), Localizer.Get("App.Title"),
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-    }
+    private void OnOpenGitHub(object sender, RoutedEventArgs e) => UpdateChecker.OpenBrowser(ProjectUri.AbsoluteUri);
 
     /// <summary>
     /// 「查找更新」：异步读取 GitHub 最新 Release，比较版本后提示用户；
@@ -76,18 +61,14 @@ public partial class AboutWindow : Window
                 return;
             }
 
-            var notes = string.Join("\n", (release.Body ?? "").Split('\n')
-                .Select(l => l.Trim().TrimStart('#', '*', '-', '>', '|').Trim())
-                .Where(l => l.Length > 0 && !l.StartsWith("---")));
-            if (notes.Length > 360) notes = notes[..360] + "…";
+            var notes = UpdateChecker.FormatNotes(release.Body);
             var prompt = string.Format(Localizer.Get("About.UpdateFound"), release.Tag,
                 release.PublishedAt.ToLocalTime().ToString("yyyy-MM-dd"), notes);
             if (MessageBox.Show(this, prompt, Localizer.Get("App.Title"),
                     MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
                 return;
 
-            var url = UpdateChecker.PickDownloadUrl(release, UpdateChecker.DetectPackageKind());
-            OpenBrowser(url ?? UpdateChecker.ReleasesUri.AbsoluteUri);
+            UpdateChecker.OpenDownload(release);
         }
         catch (Exception ex)
         {
@@ -95,7 +76,7 @@ public partial class AboutWindow : Window
             var prompt = string.Format(Localizer.Get("About.UpdateFailed"), ex.Message);
             if (MessageBox.Show(this, prompt, Localizer.Get("App.Title"),
                     MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
-                OpenBrowser(UpdateChecker.ReleasesUri.AbsoluteUri);
+                UpdateChecker.OpenBrowser(UpdateChecker.ReleasesUri.AbsoluteUri);
         }
         finally
         {

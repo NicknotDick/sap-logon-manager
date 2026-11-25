@@ -194,6 +194,10 @@ public partial class App : Application
         MainWindow = main;
         if (StartMinimized) main.StartHidden();
         else main.Show();
+
+        // 每天首次启动静默检查更新：有新版本才提示，无新版本/失败均不打扰用户。
+        // 异步执行，不阻塞窗口显示；下载走 UpdateChecker.OpenDownload 共享逻辑。
+        _ = UpdateStartupCheck.RunAsync();
     }
 
     /// <summary>查找同名的其他实例进程（排除自身；framework-dependent 下的 dotnet 宿主不处理）。</summary>

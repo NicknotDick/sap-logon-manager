@@ -224,6 +224,14 @@
     <sys:String x:Key="About.UpdateFailed">检查更新失败：{0}&#10;&#10;是否打开发布页面手动查看？</sys:String>
     <sys:String x:Key="About.BrowserFailed">无法打开浏览器，请手动复制项目仓库地址访问。</sys:String>
 
+    <sys:String x:Key="Update.Title">发现新版本</sys:String>
+    <sys:String x:Key="Update.Version">最新版本：{0}</sys:String>
+    <sys:String x:Key="Update.Published">发布时间：{0}</sys:String>
+    <sys:String x:Key="Update.WhatsNew">更新说明</sys:String>
+    <sys:String x:Key="Update.NoNotes">（本次发布未填写更新说明）</sys:String>
+    <sys:String x:Key="Update.View">查看新版本</sys:String>
+    <sys:String x:Key="Update.Later">稍后再说</sys:String>
+
     <sys:String x:Key="Quick.Placeholder">输入系统名称，回车登录</sys:String>
     <sys:String x:Key="Quick.Empty">无匹配系统</sys:String>
     <sys:String x:Key="Quick.Hint">↑↓ 选择 · Enter 登录 · 右击选账号/语言 · Esc 关闭</sys:String>

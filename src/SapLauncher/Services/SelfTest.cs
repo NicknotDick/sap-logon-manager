@@ -89,6 +89,29 @@ public static class SelfTest
             sb.AppendLine($"      当前版本={UpdateChecker.CurrentTag} 当前形态={UpdateChecker.DetectPackageKind()}");
         });
 
+        // 1e. 更新检查每日标记（用临时路径，不触碰真实数据目录）
+        Check("更新检查：每日首次标记", () =>
+        {
+            var tmp = Path.Combine(Path.GetTempPath(),
+                "saplauncher-updatecheck-" + Guid.NewGuid().ToString("N") + ".txt");
+            try
+            {
+                if (!UpdateStartupCheck.ShouldCheckToday(tmp))
+                    throw new InvalidOperationException("无标记时应检查");
+                UpdateStartupCheck.MarkChecked(tmp);
+                if (UpdateStartupCheck.ShouldCheckToday(tmp))
+                    throw new InvalidOperationException("当天已标记却仍判定为需检查");
+                File.WriteAllText(tmp, "2000-01-01");
+                if (!UpdateStartupCheck.ShouldCheckToday(tmp))
+                    throw new InvalidOperationException("过期标记应触发检查");
+                sb.AppendLine("      标记读写与过期判定正常");
+            }
+            finally
+            {
+                try { File.Delete(tmp); } catch { }
+            }
+        });
+
         // 1b. SAP GUI 定位：手动指定优先、无效目录回退、探测记录
         Check("SAP GUI 定位：手动目录优先 / 无效目录回退", () =>
         {
@@ -1203,6 +1226,12 @@ public static class SelfTest
         Check("脚本管理窗口", () => { _ = new Views.ScriptsWindow(null); });
         Check("导入窗口", () => { _ = new Views.ImportWindow(); });
         Check("关于窗口", () => { _ = new Views.AboutWindow(); });
+        Check("更新提示窗口", () =>
+        {
+            var release = new ReleaseInfo("v9.9.9", "Test", DateTimeOffset.UtcNow,
+                "## What's new\n- item", Array.Empty<ReleaseAsset>());
+            _ = new Views.UpdatePromptWindow(release);
+        });
 
         // 密码框「小眼睛」：按住显示明文、松开隐藏、密码不丢
         Check("密码框小眼睛按住显示/松开隐藏", () =>
