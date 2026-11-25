@@ -21,7 +21,17 @@
                 </StackPanel>
             </Border>
             <TextBlock x:Name="PathText" Style="{StaticResource Text.Caption}" Margin="0,14,0,0" TextWrapping="Wrap" />
-            <TextBlock x:Name="GitHubText" Style="{StaticResource Text.Caption}" Margin="0,10,0,0" TextWrapping="Wrap" />
+            <Grid Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="GitHubText" Grid.Column="0" Style="{StaticResource Text.Caption}"
+                           TextWrapping="Wrap" VerticalAlignment="Center" />
+                <Button x:Name="UpdateButton" Grid.Column="1" Margin="12,0,0,0" Padding="12,5"
+                        VerticalAlignment="Center" Content="{DynamicResource About.CheckUpdate}"
+                        Click="OnCheckUpdate" />
+            </Grid>
             <TextBlock Text="{DynamicResource About.Disclaimer}" TextWrapping="Wrap" FontSize="11"
                        Foreground="{DynamicResource Brush.TextMuted}" Margin="0,14,0,0" LineHeight="17" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">

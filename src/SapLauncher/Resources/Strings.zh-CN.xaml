@@ -217,6 +217,12 @@
     <sys:String x:Key="About.Desc">把 SAP 连接与凭据管起来，双击直达系统，支持批量登录、分组收藏、脚本绑定与配置同步。</sys:String>
     <sys:String x:Key="About.Disclaimer">本工具为独立开发的第三方软件，与 SAP SE 无任何关联。SAP、SAP GUI 为 SAP SE 的商标。</sys:String>
     <sys:String x:Key="About.GitHub">项目仓库</sys:String>
+    <sys:String x:Key="About.CheckUpdate">查找更新</sys:String>
+    <sys:String x:Key="About.Checking">检查中…</sys:String>
+    <sys:String x:Key="About.UpToDate">当前已是最新版本 {0}。</sys:String>
+    <sys:String x:Key="About.UpdateFound">发现新版本 {0}&#10;发布时间：{1}&#10;&#10;更新说明：&#10;{2}&#10;&#10;是否用浏览器下载对应安装包？</sys:String>
+    <sys:String x:Key="About.UpdateFailed">检查更新失败：{0}&#10;&#10;是否打开发布页面手动查看？</sys:String>
+    <sys:String x:Key="About.BrowserFailed">无法打开浏览器，请手动复制项目仓库地址访问。</sys:String>
 
     <sys:String x:Key="Quick.Placeholder">输入系统名称，回车登录</sys:String>
     <sys:String x:Key="Quick.Empty">无匹配系统</sys:String>

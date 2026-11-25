@@ -61,6 +61,34 @@ public static class SelfTest
             sb.AppendLine($"      系统实际主题={eff}");
         });
 
+        // 1d. 更新检查：版本比较 / JSON 解析 / 附件匹配（纯函数，不联网）
+        Check("更新检查：版本比较 / JSON 解析 / 附件匹配", () =>
+        {
+            if (UpdateChecker.CompareTags("v1.6.4", "v1.6.5") <= 0)
+                throw new InvalidOperationException("v1.6.5 应比 v1.6.4 新");
+            if (UpdateChecker.CompareTags("v1.6.4", "v1.10.0") <= 0)
+                throw new InvalidOperationException("v1.10.0 应比 v1.6.4 新");
+            if (UpdateChecker.CompareTags("v1.6.4", "v1.6.4") != 0)
+                throw new InvalidOperationException("相同版本应相等");
+            if (UpdateChecker.CompareTags("v1.6.4", "not-a-version") != 0)
+                throw new InvalidOperationException("非法版本应保守返回 0");
+
+            const string json = """
+                {"tag_name":"v9.9.9","name":"Release","published_at":"2026-11-24T10:00:00Z",
+                 "body":"notes","assets":[
+                   {"name":"SAPLogonManager-v9.9.9.zip","browser_download_url":"https://example.test/a.zip","size":1},
+                   {"name":"SAPLogonManager-v9.9.9-SingleFile.exe","browser_download_url":"https://example.test/a.exe","size":2}]}
+                """;
+            var release = UpdateChecker.Parse(json);
+            if (release.Tag != "v9.9.9" || release.Assets.Count != 2)
+                throw new InvalidOperationException("Release JSON 解析失败");
+            var zip = UpdateChecker.PickDownloadUrl(release, PackageKind.Zip);
+            var single = UpdateChecker.PickDownloadUrl(release, PackageKind.SingleFile);
+            if (zip != "https://example.test/a.zip" || single != "https://example.test/a.exe")
+                throw new InvalidOperationException("附件匹配错误");
+            sb.AppendLine($"      当前版本={UpdateChecker.CurrentTag} 当前形态={UpdateChecker.DetectPackageKind()}");
+        });
+
         // 1b. SAP GUI 定位：手动指定优先、无效目录回退、探测记录
         Check("SAP GUI 定位：手动目录优先 / 无效目录回退", () =>
         {

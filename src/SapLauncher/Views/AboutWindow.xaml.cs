@@ -11,6 +11,9 @@ public partial class AboutWindow : Window
     /// <summary>GitHub 项目地址。</summary>
     private static readonly Uri ProjectUri = new("https://github.com/NicknotDick/sap-logon-manager");
 
+    /// <summary>防止「查找更新」被连点导致并发请求。</summary>
+    private bool _checking;
+
     public AboutWindow()
     {
         InitializeComponent();
@@ -34,15 +37,71 @@ public partial class AboutWindow : Window
         GitHubText.Inlines.Add(link);
     }
 
-    private void OnOpenGitHub(object sender, RoutedEventArgs e)
+    private void OnOpenGitHub(object sender, RoutedEventArgs e) => OpenBrowser(ProjectUri.AbsoluteUri);
+
+    /// <summary>用系统默认浏览器打开链接（含更新下载）。</summary>
+    private static void OpenBrowser(string url)
     {
         try
         {
-            Process.Start(new ProcessStartInfo(ProjectUri.AbsoluteUri) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         }
         catch (Exception ex)
         {
-            Log.Warn("打开 GitHub 链接失败：" + ex.Message);
+            Log.Warn("打开浏览器失败：" + ex.Message);
+            MessageBox.Show(Localizer.Get("About.BrowserFailed"), Localizer.Get("App.Title"),
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    /// <summary>
+    /// 「查找更新」：异步读取 GitHub 最新 Release，比较版本后提示用户；
+    /// 用户确认时按当前安装包形态（zip / 单文件）用浏览器下载对应附件。
+    /// </summary>
+    private async void OnCheckUpdate(object sender, RoutedEventArgs e)
+    {
+        if (_checking) return;
+        _checking = true;
+        var original = UpdateButton.Content;
+        UpdateButton.IsEnabled = false;
+        UpdateButton.Content = Localizer.Get("About.Checking");
+        try
+        {
+            var release = await UpdateChecker.GetLatestAsync();
+            if (UpdateChecker.CompareTags(UpdateChecker.CurrentTag, release.Tag) <= 0)
+            {
+                MessageBox.Show(this,
+                    string.Format(Localizer.Get("About.UpToDate"), UpdateChecker.CurrentTag),
+                    Localizer.Get("App.Title"), MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var notes = string.Join("\n", (release.Body ?? "").Split('\n')
+                .Select(l => l.Trim().TrimStart('#', '*', '-', '>', '|').Trim())
+                .Where(l => l.Length > 0 && !l.StartsWith("---")));
+            if (notes.Length > 360) notes = notes[..360] + "…";
+            var prompt = string.Format(Localizer.Get("About.UpdateFound"), release.Tag,
+                release.PublishedAt.ToLocalTime().ToString("yyyy-MM-dd"), notes);
+            if (MessageBox.Show(this, prompt, Localizer.Get("App.Title"),
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            var url = UpdateChecker.PickDownloadUrl(release, UpdateChecker.DetectPackageKind());
+            OpenBrowser(url ?? UpdateChecker.ReleasesUri.AbsoluteUri);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("检查更新失败：" + ex.Message);
+            var prompt = string.Format(Localizer.Get("About.UpdateFailed"), ex.Message);
+            if (MessageBox.Show(this, prompt, Localizer.Get("App.Title"),
+                    MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+                OpenBrowser(UpdateChecker.ReleasesUri.AbsoluteUri);
+        }
+        finally
+        {
+            UpdateButton.Content = original;
+            UpdateButton.IsEnabled = true;
+            _checking = false;
         }
     }
 

@@ -218,6 +218,12 @@
     <sys:String x:Key="About.Desc">Manages SAP connections and credentials, one click to log on, with batch logon, groups, scripts and config sync.</sys:String>
     <sys:String x:Key="About.Disclaimer">Independent third-party tool, not affiliated with SAP SE. SAP and SAP GUI are trademarks of SAP SE.</sys:String>
     <sys:String x:Key="About.GitHub">Project repository</sys:String>
+    <sys:String x:Key="About.CheckUpdate">Check for Updates</sys:String>
+    <sys:String x:Key="About.Checking">Checking…</sys:String>
+    <sys:String x:Key="About.UpToDate">You are on the latest version ({0}).</sys:String>
+    <sys:String x:Key="About.UpdateFound">New version {0} available&#10;Published: {1}&#10;&#10;What's new:&#10;{2}&#10;&#10;Download the matching package in your browser?</sys:String>
+    <sys:String x:Key="About.UpdateFailed">Could not check for updates: {0}&#10;&#10;Open the releases page manually?</sys:String>
+    <sys:String x:Key="About.BrowserFailed">Could not open the browser. Please visit the repository URL manually.</sys:String>
 
     <sys:String x:Key="Quick.Placeholder">Type a system name, Enter to log on</sys:String>
     <sys:String x:Key="Quick.Empty">No match</sys:String>
